@@ -137,7 +137,7 @@ project28/
 
 The project is divided into three members based on application-layer development, network and SDN integration, and testing and performance evaluation.
 
-# MEMBER 1 — Application Layer Implementation
+# Prajwal M R — Application Layer Implementation
 
 ## Files Completed
 
@@ -242,7 +242,7 @@ The backend is hosted on h3.
 
 ---
 
-# MEMBER 2 — Network Layer and SDN Integration
+# Moola Adithya — Network Layer and SDN Integration
 
 ## Files Completed
 
@@ -517,7 +517,7 @@ Run Demonstration
 
 ---
 
-# MEMBER 3 — Testing, Performance Evaluation, and Dashboard
+# Nishanth U — Testing, Performance Evaluation, and Dashboard
 
 ## Files Completed
 
@@ -844,9 +844,9 @@ The system is evaluated using automated tests, traffic generation, and performan
 
 | Member | Area | Files |
 |---|---|---|
-| Member 1 | Application Layer | `proxy.py`, `client.py`, `service.py` |
-| Member 2 | Network Layer and SDN Integration | `topology.py`, `controller.py`, `rules.py`, `policy.json`, `lab.py` |
-| Member 3 | Testing, Performance, and Dashboard | `test_proxy_http.py`, `test_rules.py`, `run_tests.py`, `bench.py`, `traffic.py`, `run_experiments.py`, `harness.py`, `dashboard.py`, `ui/index.html`, `README.md`, `POLISH_NOTES.md` |
+| Prajwal M R | Application Layer | `proxy.py`, `client.py`, `service.py` |
+| Moola Adithya | Network Layer and SDN Integration | `topology.py`, `controller.py`, `rules.py`, `policy.json`, `lab.py` |
+| Nishanth U | Testing, Performance, and Dashboard | `test_proxy_http.py`, `test_rules.py`, `run_tests.py`, `bench.py`, `traffic.py`, `run_experiments.py`, `harness.py`, `dashboard.py`, `ui/index.html`, `README.md`, `POLISH_NOTES.md` |
 
 ---
 
