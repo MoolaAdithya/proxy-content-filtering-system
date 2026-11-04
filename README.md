@@ -746,43 +746,64 @@ python3 run_experiments.py --quick
 ---
 
 
-## 7. Project Screenshots
+# 7. Project Screenshots
 
-### 7.1 SDN Controller Startup
+## 7.1 Project Files
 
-![Controller Startup](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/02_controller_startup.png)
+![Project Files](screenshots/screenshots/01_project_files.png)
 
-### 7.2 Mininet Topology
+## 7.2 Mininet Topology
 
-![Mininet Topology](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/03_mininet_topology.png)
+![Mininet Topology](screenshots/screenshots/02_mininet_topology.png)
 
-### 7.3 Successful HTTP Request
+## 7.3 Network Connectivity
 
-![Allowed Request](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/04_allowed_request.png)
+![Pingall Test](screenshots/screenshots/03_pingall.png)
 
-### 7.4 Content Filtering
+## 7.4 Proxy Startup
 
-![Blocked Request](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/05_blocked_request.png)
+![Proxy Running](screenshots/screenshots/04_proxy_running.png)
 
-### 7.5 Dynamic SDN Blocking
+## 7.5 Successful HTTP Request
 
-![Dynamic Blocking](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/06_sdn_blocking.png)
+![Allowed Request](screenshots/screenshots/05_allowed_request.png)
 
-### 7.6 OpenFlow Drop Rules
+## 7.6 Content Filtering
 
-![OpenFlow Rules](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/07_flow_rules.png)
+![Blocked Request](screenshots/screenshots/06_content_filtering.png)
 
-### 7.7 Controller Statistics
+## 7.7 Dynamic SDN Blocking
 
-![Controller Statistics](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/08_controller_stats.png)
+![SDN Blocking](screenshots/screenshots/07_sdn_block.png)
 
-### 7.8 Dashboard
+## 7.8 OpenFlow Drop Rules
 
-![Dashboard](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/09_dashboard.png)
+![OpenFlow Drop Rules](screenshots/screenshots/08_openflow_drop_rule.png)
 
-### 7.9 Testing Results
+## 7.9 Blocked Client
 
-![Testing Results](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/10_testing_results.png)
+![Blocked Client](screenshots/screenshots/09_blocked_client.png)
+
+## 7.10 SDN REST API Status
+
+![SDN Status](screenshots/screenshots/10_sdn_status.png)
+
+## 7.11 SDN Controller Startup
+
+![Controller Startup](screenshots/screenshots/11_controller_startup.png)
+
+## 7.12 Controller Statistics
+
+![Controller Statistics](screenshots/screenshots/12_controller_stats.png)
+
+## 7.13 Dashboard
+
+![Dashboard](screenshots/screenshots/13_dashboard.png)
+
+## 7.14 Testing Results
+
+![Testing Results](screenshots/screenshots/14_testing_results.png)
+
 
 
 ---
