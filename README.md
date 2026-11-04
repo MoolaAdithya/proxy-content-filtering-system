@@ -745,45 +745,45 @@ python3 run_experiments.py --quick
 
 ---
 
-# 7. Screenshots and Demonstration
 
-The following screenshots demonstrate the implementation and execution of the project.
+## 7. Project Screenshots
 
-## 7.1 SDN Controller Startup
+### 7.1 SDN Controller Startup
 
-![Controller Startup](docs/screenshots/02_controller_startup.png)
+![Controller Startup](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/02_controller_startup.png)
 
-## 7.2 Mininet Topology
+### 7.2 Mininet Topology
 
-![Mininet Topology](docs/screenshots/03_mininet_topology.png)
+![Mininet Topology](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/03_mininet_topology.png)
 
-## 7.3 Successful HTTP Request
+### 7.3 Successful HTTP Request
 
-![Allowed Request](docs/screenshots/04_allowed_request.png)
+![Allowed Request](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/04_allowed_request.png)
 
-## 7.4 Content Filtering
+### 7.4 Content Filtering
 
-![Blocked Request](docs/screenshots/05_blocked_request.png)
+![Blocked Request](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/05_blocked_request.png)
 
-## 7.5 Dynamic SDN Blocking
+### 7.5 Dynamic SDN Blocking
 
-![Dynamic Blocking](docs/screenshots/06_sdn_blocking.png)
+![Dynamic Blocking](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/06_sdn_blocking.png)
 
-## 7.6 OpenFlow Drop Rules
+### 7.6 OpenFlow Drop Rules
 
-![OpenFlow Rules](docs/screenshots/07_flow_rules.png)
+![OpenFlow Rules](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/07_flow_rules.png)
 
-## 7.7 Controller Statistics
+### 7.7 Controller Statistics
 
-![Controller Statistics](docs/screenshots/08_controller_stats.png)
+![Controller Statistics](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/08_controller_stats.png)
 
-## 7.8 Dashboard
+### 7.8 Dashboard
 
-![Dashboard](docs/screenshots/09_dashboard.png)
+![Dashboard](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/09_dashboard.png)
 
-## 7.9 Testing Results
+### 7.9 Testing Results
 
-![Testing Results](docs/screenshots/10_testing_results.png)
+![Testing Results](https://raw.githubusercontent.com/MoolaAdithya/proxy-content-filtering-system/main/docs/screenshots/10_testing_results.png)
+
 
 ---
 
