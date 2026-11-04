@@ -1,89 +1,116 @@
 # Proxy and Content Filtering System
+## Project 28 — Computer Networks
 
-## Project Overview
+**Project Type:** TCP Proxy and SDN-Based Content Filtering  
+**Protocol:** TCP  
+**SDN Controller:** OS-Ken  
+**Network Emulator:** Mininet  
+**Switch:** Open vSwitch  
+**OpenFlow Version:** 1.3
 
-The **Proxy and Content Filtering System** is a network security project that implements a concurrent TCP proxy to control and filter client requests to backend services.
+**GitHub Repository:**  
+https://github.com/MoolaAdithya/proxy-content-filtering-system
 
-The system monitors incoming requests, applies configurable filtering policies, and dynamically allows or blocks traffic. It integrates an SDN controller using OS-Ken and a Mininet network environment to enforce network-level filtering rules.
+---
 
-The project aims to improve network security, provide centralized traffic control, and evaluate the performance overhead introduced by proxy-based filtering.
+# 1. Project Overview
 
-## Objectives
+The Proxy and Content Filtering System is a network security project designed to control client access to simulated backend services through a TCP proxy.
 
-- Develop a concurrent TCP proxy server.
-- Intercept and analyze client requests.
-- Implement configurable content filtering policies.
-- Allow or block traffic based on predefined rules.
-- Integrate the proxy with an SDN controller.
-- Dynamically install and remove network filtering rules.
-- Log permitted and blocked requests.
-- Measure proxy overhead and performance.
+The system inspects HTTP requests and evaluates them against configurable filtering policies. Based on the policy decision, requests are allowed, denied, or monitored.
 
-## Project Architecture
+When a client repeatedly violates the configured security policies, the proxy can communicate with an SDN controller through a REST API. The controller dynamically installs OpenFlow rules in the Open vSwitch to block the client's traffic at the network level.
 
-The system consists of the following major components:
+The project combines application-layer request inspection with network-layer enforcement.
 
-1. **Client:** Generates HTTP requests to access backend services.
-2. **TCP Proxy:** Intercepts client requests and forwards valid requests.
-3. **Content Filtering Engine:** Checks requests against configurable policies.
-4. **SDN Controller (OS-Ken):** Manages dynamic network filtering rules.
-5. **Mininet Network:** Simulates the network using Open vSwitch.
-6. **Backend Server:** Processes permitted requests and returns responses.
-7. **Dashboard and Monitoring:** Displays logs, statistics, and monitoring information.
-8. **Policy Configuration:** Stores filtering rules and parameters in `policy.json`.
+## 1.1 Problem Statement
 
-### Request Flow
+Unrestricted access to backend services can expose systems to unwanted traffic, malicious requests, and unauthorized access.
 
-1. The client sends a request to the TCP proxy.
-2. The proxy receives and analyzes the request.
-3. The content filtering engine checks the request against configured policies.
-4. Permitted requests are forwarded to the backend server.
-5. Blocked requests are denied.
-6. Policy violations can trigger dynamic SDN filtering rules.
-7. The response is returned to the client.
-8. Request information and performance metrics are recorded.
+Traditional request filtering can reject malicious HTTP requests, but repeated violations may continue reaching the application.
 
-## Technologies Used
+This project addresses the problem by implementing:
 
-- Python
-- TCP Socket Programming
-- Mininet
-- Open vSwitch (OVS)
-- OS-Ken SDN Controller
-- HTTP Protocol
-- JSON
-- Linux
+- TCP proxy-based request inspection.
+- Configurable content filtering policies.
+- Application-layer access control.
+- Dynamic SDN-based IP blocking.
+- Destination-port restrictions.
+- Traffic logging and monitoring.
+- Performance evaluation of proxy overhead.
 
-## Key Features
+## 1.2 Objectives
 
-- Concurrent TCP proxy handling
-- Configurable content filtering
-- Keyword-based request filtering
-- Host-based filtering policies
-- Dynamic SDN-based traffic blocking
-- Client block and unblock functionality
-- Request logging
-- Performance evaluation
-- Dashboard-based monitoring
+- Develop a concurrent TCP proxy.
+- Parse and forward HTTP requests.
+- Dynamically allow or block traffic using configurable policies.
+- Implement network-level blocking using SDN.
+- Integrate the proxy with an OS-Ken controller.
+- Implement REST API-based communication.
+- Maintain logs of permitted and blocked traffic.
+- Collect flow statistics from the Open vSwitch.
+- Evaluate proxy overhead and filtering performance.
 
-## Project Structure
+---
+
+# 2. System Architecture
+
+The system contains three major layers.
+
+### Application Layer
+
+The application layer receives client requests, inspects HTTP messages, evaluates filtering policies, and forwards permitted requests to the backend service.
+
+### Network Layer
+
+The network layer is implemented using Mininet and Open vSwitch. It provides connectivity between the client, proxy, backend, and testing hosts.
+
+### SDN Control Layer
+
+The OS-Ken controller manages the Open vSwitch through OpenFlow 1.3. It dynamically installs and removes flow rules to enforce network-level restrictions.
+
+## 2.1 Architecture Diagram
+
+![System Architecture](docs/screenshots/01_architecture.png)
+
+## 2.2 Network Topology
+
+| Component | IP Address | Role |
+|---|---|---|
+| h1 | 10.0.0.1 | Normal client |
+| h2 | 10.0.0.2 | TCP proxy |
+| h3 | 10.0.0.3 | Backend service |
+| h4 | 10.0.0.4 | Attacker and testing client |
+| s1 | Open vSwitch | Network forwarding |
+| Root namespace | 10.0.0.254 | Controller REST API connectivity |
+
+### Network Ports
+
+| Component | Port |
+|---|---:|
+| Proxy | 8888 |
+| Backend HTTP service | 80 |
+| Backend test service | 9002 |
+| SDN Controller OpenFlow | 6653 |
+| Controller REST API | 8080 |
+| Dashboard | 5000 |
+
+---
+
+# 3. Project Directory Structure
 
 ```text
 project28/
 │
-├── proxy.py
 ├── client.py
+├── proxy.py
 ├── service.py
+│
 ├── controller.py
 ├── topology.py
 ├── rules.py
 ├── policy.json
-│
 ├── lab.py
-├── harness.py
-├── dashboard.py
-├── ui/
-│   └── index.html
 │
 ├── test_proxy_http.py
 ├── test_rules.py
@@ -91,121 +118,736 @@ project28/
 ├── bench.py
 ├── traffic.py
 ├── run_experiments.py
+├── harness.py
+├── dashboard.py
 │
-├── results/
+├── ui/
+│   └── index.html
 │
 ├── README.md
-└── POLISH_NOTES.md
+├── POLISH_NOTES.md
+│
+└── docs/
+    └── screenshots/
 ```
 
-## Team Contribution and File Distribution
+---
 
-The project was divided among three team members based on functionality.
+# 4. Team Contributions and File-Level Implementation
 
-### Prajwal M R – TCP Proxy and Client Implementation
+The project is divided into three members based on application-layer development, network and SDN integration, and testing and performance evaluation.
 
-**Files handled:**
-- `proxy.py`
-- `client.py`
-- `service.py`
+# MEMBER 1 — Application Layer Implementation
 
-**Responsibilities:**
-- Implemented TCP proxy functionality.
-- Developed client request handling.
-- Implemented backend service communication.
-- Implemented request forwarding and response handling.
-- Worked on application-layer content filtering.
-- Tested permitted and blocked requests.
+## Files Completed
 
-### Moola Adithya– SDN Controller and Network Topology
+| File | Description |
+|---|---|
+| `proxy.py` | TCP proxy implementation |
+| `client.py` | Client request generation |
+| `service.py` | Backend service implementation |
 
-**Files handled:**
-- `controller.py`
-- `topology.py`
-- `rules.py`
-- `policy.json`
-- `lab.py`
+## 4.1 `proxy.py` — TCP Proxy
 
-**Responsibilities:**
-- Implemented the OS-Ken SDN controller.
-- Configured the Mininet network topology.
-- Implemented dynamic SDN filtering rules.
-- Configured filtering policies.
-- Integrated network-level traffic control.
-- Tested SDN rule installation and client blocking.
+### Purpose
 
-### Nishanth U– Testing, Performance Evaluation, and Dashboard
+The proxy acts as an intermediary between the client and the backend server.
 
-**Files handled:**
-- `test_proxy_http.py`
-- `test_rules.py`
-- `run_tests.py`
-- `bench.py`
-- `traffic.py`
-- `run_experiments.py`
-- `harness.py`
-- `dashboard.py`
-- `ui/index.html`
-- `README.md`
-- `POLISH_NOTES.md`
+It receives client requests, performs HTTP parsing and policy evaluation, and forwards permitted requests to the backend.
 
-**Responsibilities:**
-- Developed and executed test cases.
-- Verified proxy and filtering functionality.
-- Evaluated system performance and proxy overhead.
-- Worked on dashboard and monitoring functionality.
-- Prepared project documentation.
-- Assisted with integration testing and final demonstration.
+### Main responsibilities
 
-### Integration
+- Listen for incoming TCP connections on port 8888.
+- Accept client connections.
+- Handle concurrent client requests.
+- Parse HTTP requests.
+- Communicate with the policy engine.
+- Forward permitted requests to the backend service.
+- Reject requests that violate filtering policies.
+- Communicate with the SDN controller through the REST API.
+- Maintain permitted and blocked traffic logs.
+- Measure request-processing overhead.
 
-All three members contributed to the integration and verification of the complete system. The project components were combined to demonstrate TCP proxying, content filtering, SDN-based traffic control, and performance evaluation.
+### Request Processing Flow
 
-## Configuration
+```text
+Client Request
+      |
+      v
+TCP Connection to Proxy
+      |
+      v
+HTTP Request Parsing
+      |
+      v
+Policy Evaluation
+      |
+      +------ Allow ------> Backend Server
+      |
+      +------ Deny -------> Error Response
+      |
+      +------ Violation --> SDN Block Request
+```
 
-Filtering policies are maintained in `policy.json`.
+### SDN Integration
 
-The configuration supports:
+The proxy can send a blocking request to the controller when the configured strike limit is reached.
 
-- Banned keywords
-- Blocked hosts
-- Denied clients
-- Allowed HTTP methods
-- Client blocking parameters
-- Strike limits and time windows
+The controller receives the request through:
 
-The policy configuration can be modified to customize filtering behavior.
+```text
+POST /policy/block
+```
 
-## Testing and Performance Evaluation
+This integrates application-layer security with network-level enforcement.
 
-The project includes testing and performance evaluation scripts to verify functionality and measure system performance.
+## 4.2 `client.py` — Client Implementation
 
-Testing includes:
+### Purpose
 
-- Permitted HTTP requests
-- Blocked requests
-- Content filtering verification
-- Dynamic SDN rule installation
-- Client blocking and unblocking
-- Proxy performance measurement
-- Request overhead evaluation
+The client generates requests to test the proxy and backend service.
 
-## Expected Outcome
+### Main responsibilities
 
-The system provides a functional TCP proxy with configurable content filtering and dynamic SDN-based traffic control. It demonstrates the integration of application-layer filtering with software-defined networking in a simulated environment.
+- Establish TCP communication with the proxy.
+- Generate HTTP requests.
+- Send requests through the proxy.
+- Receive responses.
+- Display response status and content.
+- Test permitted and denied requests.
 
-## Conclusion
+### Testing Scenarios
 
-The Proxy and Content Filtering System demonstrates how TCP proxying, configurable security policies, and SDN integration can be combined to create a network traffic filtering solution.
+- Valid HTTP request.
+- Request containing a banned keyword.
+- Request to a restricted hostname.
+- Request using a denied HTTP method.
+- Repeated policy violations.
 
-The project provides practical experience in socket programming, network emulation, traffic control, security policy enforcement, and performance evaluation.
+## 4.3 `service.py` — Backend Service
 
-## Project Information
+### Purpose
 
-**Project Type:** Computer Networks – Final Project
+The backend service simulates a server that provides content to clients through the proxy.
 
-**Protocol:** TCP
+### Main responsibilities
 
-**Network Environment:** Mininet
+- Listen for incoming connections.
+- Provide simulated backend content.
+- Respond to valid HTTP requests.
+- Support testing of proxy forwarding.
+- Provide service endpoints on ports 80 and 9002.
 
-**SDN Controller:** OS-Ken
+The backend is hosted on h3.
+
+---
+
+# MEMBER 2 — Network Layer and SDN Integration
+
+## Files Completed
+
+| File | Description |
+|---|---|
+| `topology.py` | Mininet network topology |
+| `controller.py` | OS-Ken SDN controller |
+| `rules.py` | Filtering policy evaluation engine |
+| `policy.json` | Configurable security policies |
+| `lab.py` | Complete project integration and startup |
+
+## 4.4 `topology.py` — Mininet Topology
+
+### Purpose
+
+Creates the virtual network used by the project.
+
+### Implementation Details
+
+- Creates four virtual hosts.
+- Creates one Open vSwitch.
+- Connects the hosts to the switch.
+- Assigns IP addresses.
+- Configures the remote SDN controller.
+- Uses OpenFlow 1.3.
+- Creates a root namespace node for controller REST API connectivity.
+- Supports link delay configuration.
+- Provides network cleanup and setup functionality.
+
+### Host Configuration
+
+```text
+h1: 10.0.0.1/24
+h2: 10.0.0.2/24
+h3: 10.0.0.3/24
+h4: 10.0.0.4/24
+```
+
+### Controller Configuration
+
+```text
+Controller IP: 127.0.0.1
+Controller Port: 6653
+OpenFlow Version: 1.3
+```
+
+### Root Namespace
+
+The root namespace is assigned:
+
+```text
+10.0.0.254
+```
+
+This allows the proxy to communicate with the controller REST API.
+
+## 4.5 `controller.py` — OS-Ken SDN Controller
+
+### Purpose
+
+Implements the control plane of the network.
+
+The controller manages the Open vSwitch and dynamically applies network-level security policies.
+
+### Implementation Details
+
+- Implements an OS-Ken application.
+- Supports OpenFlow 1.3.
+- Maintains MAC address learning tables.
+- Tracks connected switches.
+- Implements packet forwarding.
+- Installs table-miss rules.
+- Dynamically blocks source IP addresses.
+- Dynamically blocks destination ports.
+- Supports source-specific port blocking.
+- Implements IP and port unblocking.
+- Maintains block expiration information.
+- Provides REST API endpoints.
+- Collects flow statistics.
+- Maintains policy history.
+
+### MAC Learning
+
+The controller learns the source MAC address and the corresponding switch port.
+
+When the destination MAC address is known, the packet is forwarded to the correct port.
+
+When the destination is unknown, the packet is flooded.
+
+### Dynamic IP Blocking
+
+The controller installs a source-IP matching drop flow.
+
+Example:
+
+```text
+Source IP: 10.0.0.1
+Priority: 200
+Action: Drop
+Timeout: 300 seconds
+```
+
+### Port Blocking
+
+The controller supports:
+
+- Global destination-port blocking.
+- Source-specific destination-port blocking.
+- Runtime unblocking.
+
+The configured static destination port is 9002.
+
+### REST API Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/policy/status` | GET | Retrieve controller status |
+| `/policy/stats` | GET | Retrieve flow statistics |
+| `/policy/block` | POST | Block an IP address |
+| `/policy/unblock` | POST | Unblock an IP address |
+| `/policy/port_block` | POST | Block a destination port |
+| `/policy/port_unblock` | POST | Unblock a destination port |
+
+### OpenFlow Priorities
+
+| Priority | Rule |
+|---:|---|
+| 0 | Table-miss rule |
+| 10 | Learned MAC forwarding |
+| 100 | Global port blocking |
+| 150 | Source-specific port blocking |
+| 200 | IP blocking |
+
+## 4.6 `rules.py` — Filtering Policy Engine
+
+### Purpose
+
+Evaluates HTTP requests against configured security rules.
+
+### Implementation Details
+
+- Converts HTTP requests into structured representations.
+- Normalizes HTTP paths.
+- Decodes URL-encoded data.
+- Extracts request methods, headers, hostnames, and bodies.
+- Compiles policy conditions.
+- Evaluates enabled rules in order.
+- Implements first-match policy evaluation.
+- Supports allow, deny, and monitor actions.
+- Uses a default policy action when no rule matches.
+
+### Policy Actions
+
+| Action | Description |
+|---|---|
+| Allow | Permits the request |
+| Deny | Rejects the request |
+| Monitor | Records or observes the request without necessarily denying it |
+
+### Request Normalization
+
+The policy engine decodes URL-encoded input and normalizes paths to improve consistency during filtering.
+
+Example:
+
+```text
+/a/b/../c
+```
+
+Normalized path:
+
+```text
+/a/c
+```
+
+This helps identify suspicious path traversal patterns.
+
+## 4.7 `policy.json` — Configurable Security Policies
+
+### Purpose
+
+Stores the security policies used by the filtering engine.
+
+### Configuration
+
+The policy file contains:
+
+- Version information.
+- Default action.
+- Block duration.
+- Strike limit.
+- Strike window.
+- Ordered filtering rules.
+
+### Implemented Rules
+
+| Rule | Function |
+|---|---|
+| R01 | Health-check access |
+| R02 | HTTP method restrictions |
+| R03 | SQL injection pattern detection |
+| R04 | Path traversal and system-file access detection |
+| R05 | XSS pattern detection |
+| R06 | Hacking-tool User-Agent detection |
+| R07 | Admin access restriction |
+| R08 | Executable download restriction |
+| R09 | Malware keyword detection |
+| R10 | Hostname blocking |
+| R11 | Banned URL keyword filtering |
+| R12 | Destination-port restrictions |
+| R13 | Card-number pattern detection in POST bodies |
+| R14 | Upload size restriction |
+| R15 | Login request monitoring |
+| R16 | Excessive request-rate detection; disabled in the current configuration |
+
+### Strike Configuration
+
+```json
+{
+  "block_client_on_violation": true,
+  "block_duration": 300,
+  "strike_limit": 3,
+  "strike_window": 60
+}
+```
+
+This allows repeated policy violations to trigger temporary client IP blocking.
+
+## 4.8 `lab.py` — Project Integration
+
+### Purpose
+
+Coordinates the startup and execution of the complete project.
+
+### Implementation Details
+
+- Builds the Mininet topology.
+- Starts the virtual network.
+- Waits for the controller connection.
+- Performs connectivity checks.
+- Starts the backend service.
+- Starts the proxy.
+- Configures SDN integration.
+- Warms up MAC learning.
+- Starts the dashboard.
+- Provides the Mininet CLI.
+- Cleans up processes and network resources.
+
+### Integration Flow
+
+```text
+Start Controller
+      |
+      v
+Start lab.py
+      |
+      v
+Build Mininet Topology
+      |
+      v
+Start Backend Service
+      |
+      v
+Start TCP Proxy
+      |
+      v
+Verify Network
+      |
+      v
+Run Demonstration
+```
+
+---
+
+# MEMBER 3 — Testing, Performance Evaluation, and Dashboard
+
+## Files Completed
+
+| File | Description |
+|---|---|
+| `test_proxy_http.py` | HTTP proxy tests |
+| `test_rules.py` | Policy engine unit tests |
+| `run_tests.py` | Test execution |
+| `bench.py` | Performance benchmarking |
+| `traffic.py` | Traffic generation |
+| `run_experiments.py` | Performance and attack experiments |
+| `harness.py` | Test scenario coordination |
+| `dashboard.py` | Monitoring dashboard backend |
+| `ui/index.html` | Dashboard frontend |
+| `README.md` | Project documentation |
+| `POLISH_NOTES.md` | Documentation and final polishing notes |
+
+## 4.9 `test_proxy_http.py` — HTTP Proxy Testing
+
+### Purpose
+
+Tests the HTTP functionality of the proxy.
+
+### Testing Areas
+
+- Request forwarding.
+- HTTP response handling.
+- Permitted request behavior.
+- Denied request behavior.
+- Proxy communication with the backend.
+
+## 4.10 `test_rules.py` — Policy Engine Testing
+
+### Purpose
+
+Tests the correctness of the filtering rules.
+
+### Testing Areas
+
+- HTTP method restrictions.
+- URL filtering.
+- Hostname filtering.
+- SQL injection detection.
+- Path traversal detection.
+- XSS detection.
+- Request body filtering.
+- Policy action correctness.
+
+The current test suite contains 36 policy-engine unit tests.
+
+## 4.11 `run_tests.py` — Test Execution
+
+### Purpose
+
+Provides a centralized way to execute the project's automated test suite.
+
+It helps verify the functionality of the proxy and policy engine.
+
+## 4.12 `bench.py` — Performance Benchmarking
+
+### Purpose
+
+Generates workloads and measures the performance of the system.
+
+### Evaluation Areas
+
+- Request processing time.
+- Proxy overhead.
+- Response time.
+- System behavior under workload.
+
+## 4.13 `traffic.py` — Traffic Generation
+
+### Purpose
+
+Generates simulated traffic from the Mininet hosts.
+
+### Use Cases
+
+- Normal client traffic.
+- Repeated requests.
+- Suspicious traffic.
+- Attack-like test scenarios.
+
+## 4.14 `run_experiments.py` — Performance Experiments
+
+### Purpose
+
+Runs performance and attack experiments.
+
+### Evaluation Areas
+
+- Proxy overhead.
+- Traffic filtering behavior.
+- Flood scenario testing.
+- System response under different workloads.
+
+The project supports quick experiments through:
+
+```bash
+python3 run_experiments.py --quick
+```
+
+## 4.15 `harness.py` — Experiment Coordination
+
+### Purpose
+
+Coordinates test scenarios and experiment execution.
+
+It helps organize the testing process and supports repeatable evaluations.
+
+## 4.16 `dashboard.py` — Dashboard Backend
+
+### Purpose
+
+Provides the backend for the monitoring dashboard.
+
+### Features
+
+- Traffic monitoring.
+- Policy decision visibility.
+- Controller status.
+- Blocking information.
+- Statistics display.
+
+## 4.17 `ui/index.html` — Dashboard Frontend
+
+### Purpose
+
+Provides the browser interface for the project dashboard.
+
+It presents information about the system in a user-friendly interface.
+
+---
+
+# 5. Complete Request Processing Flow
+
+```text
+Client h1 / h4
+      |
+      v
+Open vSwitch s1
+      |
+      v
+Proxy h2 :8888
+      |
+      v
+HTTP Request Parsing
+      |
+      v
+rules.py
+      |
+      v
+policy.json
+      |
+      +---------- Allow ----------> Backend h3 :80
+      |
+      +---------- Deny -----------> HTTP Error Response
+      |
+      +---------- Monitor --------> Logging
+      |
+      +---------- Strike Limit ---> REST API
+                                       |
+                                       v
+                                OS-Ken Controller
+                                       |
+                                       v
+                                OpenFlow Rule
+                                       |
+                                       v
+                                Open vSwitch
+                                       |
+                                       v
+                                  Drop Traffic
+```
+
+---
+
+# 6. Execution Instructions
+
+## 6.1 Start the SDN Controller
+
+```bash
+osken-manager controller.py
+```
+
+## 6.2 Start the Mininet Lab
+
+```bash
+sudo mn -c
+sudo python3 lab.py
+```
+
+## 6.3 Verify Connectivity
+
+Inside the Mininet CLI:
+
+```bash
+pingall
+```
+
+## 6.4 Verify Controller Status
+
+```bash
+curl http://10.0.0.254:8080/policy/status
+```
+
+## 6.5 Verify Controller Statistics
+
+```bash
+curl http://10.0.0.254:8080/policy/stats
+```
+
+## 6.6 Run Automated Tests
+
+```bash
+python3 run_tests.py
+```
+
+## 6.7 Run Performance Experiments
+
+```bash
+python3 run_experiments.py --quick
+```
+
+---
+
+# 7. Screenshots and Demonstration
+
+The following screenshots demonstrate the implementation and execution of the project.
+
+## 7.1 SDN Controller Startup
+
+![Controller Startup](docs/screenshots/02_controller_startup.png)
+
+## 7.2 Mininet Topology
+
+![Mininet Topology](docs/screenshots/03_mininet_topology.png)
+
+## 7.3 Successful HTTP Request
+
+![Allowed Request](docs/screenshots/04_allowed_request.png)
+
+## 7.4 Content Filtering
+
+![Blocked Request](docs/screenshots/05_blocked_request.png)
+
+## 7.5 Dynamic SDN Blocking
+
+![Dynamic Blocking](docs/screenshots/06_sdn_blocking.png)
+
+## 7.6 OpenFlow Drop Rules
+
+![OpenFlow Rules](docs/screenshots/07_flow_rules.png)
+
+## 7.7 Controller Statistics
+
+![Controller Statistics](docs/screenshots/08_controller_stats.png)
+
+## 7.8 Dashboard
+
+![Dashboard](docs/screenshots/09_dashboard.png)
+
+## 7.9 Testing Results
+
+![Testing Results](docs/screenshots/10_testing_results.png)
+
+---
+
+# 8. Testing and Evaluation
+
+The system is evaluated using automated tests, traffic generation, and performance experiments.
+
+### Functional Testing
+
+- Valid HTTP request forwarding.
+- Content filtering.
+- Policy decision verification.
+- Dynamic IP blocking.
+- Port blocking.
+- Unblocking.
+- REST API functionality.
+
+### Network Testing
+
+- Mininet connectivity.
+- OpenFlow switch connection.
+- Flow rule installation.
+- Packet drop verification.
+- Controller statistics.
+
+### Performance Testing
+
+- Direct backend response time.
+- Proxy response time.
+- Proxy overhead.
+- Traffic workload testing.
+- Attack scenario testing.
+
+---
+
+# 9. Team Contribution Summary
+
+| Member | Area | Files |
+|---|---|---|
+| Member 1 | Application Layer | `proxy.py`, `client.py`, `service.py` |
+| Member 2 | Network Layer and SDN Integration | `topology.py`, `controller.py`, `rules.py`, `policy.json`, `lab.py` |
+| Member 3 | Testing, Performance, and Dashboard | `test_proxy_http.py`, `test_rules.py`, `run_tests.py`, `bench.py`, `traffic.py`, `run_experiments.py`, `harness.py`, `dashboard.py`, `ui/index.html`, `README.md`, `POLISH_NOTES.md` |
+
+---
+
+# 10. Conclusion
+
+The Proxy and Content Filtering System demonstrates how application-layer filtering can be integrated with SDN-based network enforcement.
+
+The TCP proxy inspects HTTP requests and evaluates configurable security policies. The OS-Ken controller dynamically installs OpenFlow rules in the Open vSwitch to block unwanted traffic.
+
+The Mininet environment provides a controlled network for testing, while the testing and performance evaluation components measure the functionality and overhead of the system.
+
+The project demonstrates:
+
+- TCP proxy development.
+- Application-layer content filtering.
+- Mininet network emulation.
+- SDN controller implementation.
+- OpenFlow-based traffic enforcement.
+- REST API integration.
+- Dynamic security policy management.
+- Automated testing and performance evaluation.
+
+## GitHub Repository
+
+https://github.com/MoolaAdithya/proxy-content-filtering-system
