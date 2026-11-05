@@ -794,7 +794,7 @@ python3 run_experiments.py --quick
 
 ## 7.12 Controller Statistics
 
-![Controller Statistics](screenshots/screenshots/12_controller_stats.png)
+![Controller Statistics](screenshots/screenshots/12_controller_status.png)
 
 ## 7.13 Dashboard
 
