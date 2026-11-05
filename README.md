@@ -798,7 +798,7 @@ python3 run_experiments.py --quick
 
 ## 7.13 Dashboard
 
-![Dashboard](screenshots/screenshots/13_dashboard.png)
+![Dashboard](screenshots/screenshots/13_dashboard.png.png)
 
 ## 7.14 Testing Results
 
