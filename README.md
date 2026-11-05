@@ -8,11 +8,14 @@
 **Switch:** Open vSwitch  
 **OpenFlow Version:** 1.3
 
-**Team Members:**
 
-Member 1:Prajwal M R SRN:PES1UG25CS369
-**Member 2:**Moola Adithya **SRN:**PES1UG25CS312
-**Member 3:**Nishanth U **SRN:**PES1UG25CS352
+## Team Members
+
+| Sl. No. | Name | USN | Contribution |
+|---|---|---|---|
+| 1 | Moola Adithya | PES1UG25CS312 | SDN Controller, Network Topology, OpenFlow Rules and Integration |
+| 2 | Prajwal M R | PES1UG25CS369 | TCP Proxy and Client Implementation |
+| 3 | Nishanth U | PES1UG25CS352 | Testing, Performance Evaluation and Dashboard |
 
 **GitHub Repository:**  
 https://github.com/MoolaAdithya/proxy-content-filtering-system
