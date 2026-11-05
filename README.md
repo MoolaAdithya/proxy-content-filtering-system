@@ -71,7 +71,7 @@ The OS-Ken controller manages the Open vSwitch through OpenFlow 1.3. It dynamica
 
 ## 2.1 Architecture Diagram
 
-![System Architecture](docs/screenshots/01_architecture.png)
+![System Architecture](screenshots/screenshots/project_architecture_design.png)
 
 ## 2.2 Network Topology
 
