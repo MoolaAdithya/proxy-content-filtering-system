@@ -1,0 +1,1200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proxy &amp; Content Filter · Project 28</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b14; --bg2:#0b1120; --panel:#0f1729; --panel2:#131d33; --line:rgba(148,163,184,.12); --line2:rgba(148,163,184,.22);
+  --text:#e6edf7; --muted:#8a9bb8; --dim:#5b6b88;
+  --cyan:#22d3ee; --cyan2:#0891b2; --allow:#34d399; --block:#fb4f6b; --warn:#fbbf24; --violet:#a78bfa; --blue:#60a5fa;
+  --allow-bg:rgba(52,211,153,.12); --block-bg:rgba(251,79,107,.13); --warn-bg:rgba(251,191,36,.13); --cyan-bg:rgba(34,211,238,.12); --violet-bg:rgba(167,139,250,.14);
+  --r:14px; --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(1200px 600px at 85% -10%,rgba(34,211,238,.08),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(167,139,250,.07),transparent 60%);background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+.mono{font-family:var(--mono)}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+/* ---------- sidebar */
+.side{position:sticky;top:0;height:100vh;padding:22px 16px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(15,23,41,.9),rgba(7,11,20,.9));display:flex;flex-direction:column;gap:22px}
+.brand{display:flex;align-items:center;gap:11px;padding:0 6px}
+.logo{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#22d3ee,#6366f1);box-shadow:0 0 24px rgba(34,211,238,.35)}
+.brand b{display:block;font-size:16px;letter-spacing:.3px}
+.brand span{font-size:11.5px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:11px;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;text-align:left;font-weight:500;transition:.15s}
+.nav button:hover{background:rgba(148,163,184,.07);color:var(--text)}
+.nav button.on{background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(34,211,238,.03));color:#fff;box-shadow:inset 2px 0 0 var(--cyan)}
+.nav svg{width:18px;height:18px;flex:none}
+.nav .count{margin-left:auto;font:600 11px var(--mono);background:var(--block-bg);color:var(--block);padding:1px 7px;border-radius:99px}
+.sidefoot{margin-top:auto;display:flex;flex-direction:column;gap:9px;font-size:12px;color:var(--muted);padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,41,.6)}
+.sidefoot div{display:flex;justify-content:space-between;gap:8px}
+.sidefoot .mono{color:var(--text);font-size:11.5px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--dim);margin-right:6px;vertical-align:middle}
+.dot.ok{background:var(--allow);box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+.dot.bad{background:var(--block);box-shadow:0 0 0 3px rgba(251,79,107,.18)}
+/* ---------- main */
+main{padding:22px 28px 60px;min-width:0}
+.top{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.top h1{margin:0;font-size:22px;letter-spacing:-.2px}
+.top p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.top .sp{flex:1}
+.live{display:flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--allow);padding:6px 11px;border-radius:99px;background:var(--allow-bg);border:1px solid rgba(52,211,153,.25)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--allow);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}100%{box-shadow:0 0 0 9px rgba(52,211,153,0)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;font-weight:500;font-size:13px;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:rgba(34,211,238,.5);background:#17233d}
+.btn.pri{background:linear-gradient(135deg,#06b6d4,#4f46e5);border-color:transparent;color:#fff;box-shadow:0 6px 20px -6px rgba(34,211,238,.5)}
+.btn.pri:hover{filter:brightness(1.1)}
+.btn.danger{color:var(--block);border-color:rgba(251,79,107,.35);background:var(--block-bg)}
+.btn.ok{color:var(--allow);border-color:rgba(52,211,153,.35);background:var(--allow-bg)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn svg{width:15px;height:15px}
+.page{display:none;animation:fade .25s ease}
+.page.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.grid{display:grid;gap:16px}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g3{grid-template-columns:2fr 1fr}
+.g2{grid-template-columns:1fr 1fr}
+.g3e{grid-template-columns:repeat(3,1fr)}
+.card{background:linear-gradient(180deg,rgba(19,29,51,.85),rgba(15,23,41,.85));border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;min-width:0;backdrop-filter:blur(6px)}
+.card h3{margin:0 0 3px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card h3 small{font-weight:500;color:var(--muted);font-size:12px}
+.card .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+.card .hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.card .hd > div{flex:1}
+.card .hd .sub{margin:0}
+.mt{margin-top:16px}
+/* ---------- KPIs */
+.kpi{position:relative;overflow:hidden;padding:15px 16px}
+.kpi .lb{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;display:flex;align-items:center;gap:7px}
+.kpi .lb svg{width:15px;height:15px}
+.kpi .v{font:600 27px var(--mono);margin-top:8px;letter-spacing:-.5px}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi::after{content:"";position:absolute;inset:auto -30px -40px auto;width:110px;height:110px;border-radius:50%;background:var(--glow,rgba(34,211,238,.10));filter:blur(18px)}
+.kpi.al{--glow:rgba(52,211,153,.16)} .kpi.al .lb{color:var(--allow)}
+.kpi.bl{--glow:rgba(251,79,107,.18)} .kpi.bl .lb{color:var(--block)}
+.kpi.wa{--glow:rgba(251,191,36,.15)} .kpi.wa .lb{color:var(--warn)}
+.kpi.vi{--glow:rgba(167,139,250,.18)} .kpi.vi .lb{color:var(--violet)}
+.kpi.cy .lb{color:var(--cyan)}
+/* ---------- charts */
+.chart{width:100%;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.donut-wrap canvas{flex:none}
+.dlist{flex:1;display:flex;flex-direction:column;gap:7px;font-size:12.5px;min-width:0}
+.dlist div{display:flex;align-items:center;gap:8px}
+.dlist i{width:9px;height:9px;border-radius:3px;flex:none}
+.dlist span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.dlist b{font:600 12px var(--mono)}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:12.5px;align-items:center}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .nm .mono{color:var(--cyan)}
+.bar .num{font:600 12px var(--mono);color:var(--muted)}
+.bar .track{grid-column:1/-1;height:7px;border-radius:9px;background:rgba(148,163,184,.08);overflow:hidden;display:flex}
+.bar .track b{display:block;height:100%;transition:width .5s}
+.empty{color:var(--dim);font-size:12.5px;padding:18px 0;text-align:center}
+/* ---------- tables */
+.tbl-wrap{overflow:auto;margin:0 -4px}
+table{width:100%;border-collapse:collapse;font-size:12.8px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:#111a2e;z-index:1}
+td{padding:9px 10px;border-bottom:1px solid rgba(148,163,184,.06);vertical-align:middle}
+td:last-child{width:1%;white-space:nowrap}
+td.nw{white-space:nowrap}
+tr.click{cursor:pointer}
+tr.click:hover td{background:rgba(34,211,238,.04)}
+tr.new td{animation:flash 1.2s ease}
+@keyframes flash{from{background:rgba(34,211,238,.13)}to{background:transparent}}
+.ip{font:500 12.5px var(--mono);color:#cfe7ff}
+.port{font:12px var(--mono);color:var(--muted)}
+.path{font:12px var(--mono);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.why{color:var(--muted);font-size:12px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;font:600 11px var(--mono);letter-spacing:.3px;white-space:nowrap}
+.pill.allowed,.pill.allow,.pill.open{background:var(--allow-bg);color:var(--allow)}
+.pill.blocked,.pill.deny,.pill.bad_request,.pill.filtered{background:var(--block-bg);color:var(--block)}
+.pill.monitored,.pill.monitor{background:var(--warn-bg);color:var(--warn)}
+.pill.error,.pill.closed{background:rgba(148,163,184,.12);color:#b6c2d8}
+.pill.timeout,.pill.sdn{background:var(--violet-bg);color:var(--violet)}
+.rid{font:600 11px var(--mono);color:var(--cyan);background:var(--cyan-bg);padding:2px 7px;border-radius:6px;white-space:nowrap}
+.tag{display:inline-block;font:500 11px var(--mono);padding:1px 7px;border-radius:6px;background:rgba(148,163,184,.1);color:#b9c6dc;margin:1px 3px 1px 0;white-space:nowrap}
+.tag.h{background:var(--violet-bg);color:var(--violet)}
+.sev{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.sev.low{background:#60a5fa}.sev.medium{background:var(--warn)}.sev.high{background:#fb923c}.sev.critical{background:var(--block);box-shadow:0 0 8px var(--block)}
+.mini{height:6px;border-radius:9px;background:rgba(148,163,184,.1);overflow:hidden;width:48px;display:inline-block;vertical-align:middle;margin-left:8px}
+.mini b{display:block;height:100%;background:linear-gradient(90deg,#f97316,var(--block))}
+/* ---------- forms */
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+input.i,select.i,textarea.i{background:#0a1222;border:1px solid var(--line2);border-radius:9px;padding:8px 10px;outline:none;transition:.15s;width:100%;min-width:0}
+input.i:focus,select.i:focus,textarea.i:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
+textarea.i{resize:vertical;min-height:38px;font-family:var(--mono);font-size:12.5px}
+input.i.mono{font-family:var(--mono);font-size:12.5px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.row > *{flex:1}
+.row > .btn,.row > .nofl{flex:none}
+.seg{display:inline-flex;background:#0a1222;border:1px solid var(--line2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:7px;color:var(--muted);cursor:pointer;font-size:12.5px;font-weight:500}
+.seg button.on{background:var(--panel2);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 0 0 1px var(--line2)}
+.switch{position:relative;width:36px;height:20px;flex:none;cursor:pointer;display:inline-block}
+.switch input{display:none}
+.switch span{position:absolute;inset:0;border-radius:99px;background:#26324a;transition:.2s}
+.switch span::after{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;border-radius:50%;background:#94a3b8;transition:.2s}
+.switch input:checked + span{background:rgba(34,211,238,.35)}
+.switch input:checked + span::after{transform:translateX(16px);background:var(--cyan)}
+/* ---------- lab */
+.hosts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hostc{border:1px solid var(--line2);border-radius:12px;padding:12px;cursor:pointer;display:flex;gap:11px;align-items:center;background:#0b1323;transition:.15s}
+.hostc:hover{border-color:rgba(34,211,238,.4)}
+.hostc.on{border-color:var(--cyan);background:linear-gradient(135deg,rgba(34,211,238,.12),rgba(99,102,241,.08));box-shadow:0 0 0 3px rgba(34,211,238,.1)}
+.hostc .av{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font:700 13px var(--mono);background:#16223a;color:var(--cyan)}
+.hostc.att .av{color:var(--block);background:rgba(251,79,107,.12)}
+.hostc b{display:block;font-size:13.5px}
+.hostc small{color:var(--muted);font-size:11.5px}
+.scen{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:10px}
+.sc{border:1px solid var(--line);border-radius:12px;padding:13px;background:#0b1323;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:.15s;text-align:left}
+.sc:hover{border-color:rgba(34,211,238,.45);transform:translateY(-1px);background:#0e182c}
+.sc .t{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13.5px}
+.sc .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--cyan-bg);color:var(--cyan);flex:none}
+.sc.att .ic{background:var(--block-bg);color:var(--block)}
+.sc .ic svg{width:16px;height:16px}
+.sc p{margin:0;font-size:12px;color:var(--muted);line-height:1.4}
+.sc .from{font:500 11px var(--mono);color:var(--dim)}
+.sc.busy{opacity:.55;pointer-events:none}
+.console{background:#060a12;border:1px solid var(--line);border-radius:12px;padding:6px 0;max-height:430px;overflow:auto;font:12px var(--mono)}
+.console .ln{display:grid;grid-template-columns:62px 62px 80px minmax(0,1fr) 64px 60px;gap:8px;padding:5px 12px;align-items:center}
+.console .ln:hover{background:rgba(148,163,184,.04)}
+.console .ln .p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.console .hdr{color:var(--cyan);padding:8px 12px 4px;font-size:11.5px;border-top:1px dashed var(--line)}
+.console .hdr:first-child{border-top:0}
+.console .t{color:var(--dim)}
+.probes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.probe{border:1px solid var(--line2);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:3px;min-width:100px}
+.probe b{font:600 14px var(--mono)}
+.probe.open{border-color:rgba(52,211,153,.4)} .probe.filtered{border-color:rgba(251,79,107,.45)}
+.verdict{border-radius:12px;padding:14px;margin-top:14px;border:1px solid var(--line2);background:#0a1222}
+.verdict.deny{border-color:rgba(251,79,107,.45);background:linear-gradient(135deg,rgba(251,79,107,.12),transparent)}
+.verdict.allow{border-color:rgba(52,211,153,.4);background:linear-gradient(135deg,rgba(52,211,153,.10),transparent)}
+.verdict.monitor{border-color:rgba(251,191,36,.4);background:linear-gradient(135deg,rgba(251,191,36,.10),transparent)}
+.verdict .big{font:700 18px var(--mono);display:flex;gap:10px;align-items:center}
+.verdict ul{margin:8px 0 0;padding-left:18px;color:#c7d3e6;font-size:12.5px}
+.verdict .norm{margin-top:8px;font:11.5px var(--mono);color:var(--muted);overflow-wrap:anywhere}
+/* ---------- rules */
+.rule{display:grid;grid-template-columns:auto 52px minmax(0,1.25fr) 84px minmax(0,1.6fr) 150px auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#0b1323;margin-bottom:8px;transition:.15s}
+.rule:hover{border-color:var(--line2)}
+.rule.off{opacity:.45}
+.rule .nm b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule .nm small{color:var(--muted);font-size:11.5px}
+.rule .conds{display:flex;flex-wrap:wrap;gap:3px;max-height:48px;overflow:hidden}
+.rule .hits{font:600 12px var(--mono);color:var(--muted);text-align:right}
+.rule .acts{display:flex;gap:4px}
+.icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.icon-btn:hover{color:#fff;border-color:var(--line2);background:var(--panel2)}
+.icon-btn svg{width:14px;height:14px}
+.legacy{border-style:dashed}
+/* ---------- drawer / modal / toast */
+.scrim{position:fixed;inset:0;background:rgba(2,6,15,.6);backdrop-filter:blur(3px);z-index:40;display:none}
+.scrim.on{display:block}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,100vw);background:#0d1527;border-left:1px solid var(--line2);z-index:50;transform:translateX(105%);transition:transform .25s ease;padding:22px;overflow:auto}
+.drawer.on{transform:none}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;font-size:13px;margin-top:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.98);width:min(720px,calc(100vw - 32px));max-height:88vh;overflow:auto;background:#0d1527;border:1px solid var(--line2);border-radius:16px;z-index:50;padding:22px;opacity:0;pointer-events:none;transition:.2s}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modal h2{margin:0 0 4px;font-size:18px}
+.cond{display:grid;grid-template-columns:200px 1fr 30px;gap:8px;margin-bottom:8px;align-items:start}
+.cond .help{grid-column:2/3;font-size:11.5px;color:var(--dim);margin-top:-4px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);background:#14203a;border:1px solid var(--line2);padding:11px 16px;border-radius:11px;z-index:60;opacity:0;transition:.25s;font-size:13px;max-width:min(600px,90vw);box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.err{border-color:rgba(251,79,107,.5)}
+.banner{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid rgba(251,191,36,.35);background:var(--warn-bg);color:#fde68a;font-size:13px;margin-bottom:16px}
+.banner code{font-family:var(--mono);background:rgba(0,0,0,.25);padding:1px 6px;border-radius:5px}
+.cd{font:600 12px var(--mono);color:var(--violet)}
+.cdbar{height:4px;border-radius:9px;background:rgba(167,139,250,.15);overflow:hidden;margin-top:5px;width:120px}
+.cdbar b{display:block;height:100%;background:var(--violet)}
+.hist{display:flex;flex-direction:column;gap:0;max-height:300px;overflow:auto}
+.hist div{display:grid;grid-template-columns:70px 120px 1fr;gap:10px;padding:7px 2px;border-bottom:1px solid rgba(148,163,184,.06);font-size:12.5px}
+.hist .t{color:var(--dim);font-family:var(--mono);font-size:11.5px}
+@media (max-width:1300px){.g6{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:1050px){.g3,.g2,.g3e{grid-template-columns:1fr}.rule{grid-template-columns:auto 50px 1fr auto}.rule .conds,.rule .hits,.rule > .pill{display:none}}
+@media (max-width:820px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:12px 16px;gap:10px}.nav{flex-direction:row;flex-wrap:wrap}.sidefoot{display:none}main{padding:16px}.g6{grid-template-columns:repeat(2,1fr)}.hosts{grid-template-columns:1fr}}
+
+/* ---------- intro */
+.intro{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr);gap:16px;align-items:start}
+.hero{padding:26px 28px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.16),transparent 70%);pointer-events:none}
+.eyebrow{font:600 11.5px var(--mono);letter-spacing:1.4px;text-transform:uppercase;color:var(--cyan)}
+.hero h2{font-size:30px;line-height:1.15;margin:10px 0 10px;letter-spacing:-.5px}
+.hero h2 span{background:linear-gradient(90deg,#22d3ee,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lead{color:#c3cfe2;font-size:14.5px;line-height:1.65;max-width:800px;margin:0}
+.sect{font:600 11.5px var(--sans);text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:24px 0 10px}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.step{border:1px solid var(--line);border-radius:12px;padding:12px;background:#0b1323;position:relative}
+.step .no{font:700 11px var(--mono);color:var(--cyan)}
+.step b{display:block;font-size:13px;margin:4px 0 3px}
+.step p{margin:0;font-size:11.8px;color:var(--muted);line-height:1.4}
+.step:not(:last-child)::after{content:"›";position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:10px;text-align:center;color:var(--cyan);font-size:18px;font-weight:700}
+.step.bad{border-color:rgba(251,79,107,.3)} .step.bad .no{color:var(--block)}
+.step.sdn{border-color:rgba(167,139,250,.35)} .step.sdn .no{color:var(--violet)}
+.feat{display:flex;flex-wrap:wrap;gap:8px}
+.feat span{font-size:12.3px;padding:6px 11px;border-radius:99px;border:1px solid var(--line2);background:rgba(148,163,184,.05);color:#cbd5e1}
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mem{display:flex;align-items:center;gap:13px;padding:15px;border:1px solid var(--line2);border-radius:14px;background:linear-gradient(135deg,rgba(34,211,238,.09),rgba(99,102,241,.07))}
+.mem .av{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font:700 15px var(--mono);color:#fff;background:linear-gradient(135deg,#06b6d4,#4f46e5);flex:none;box-shadow:0 6px 18px -6px rgba(34,211,238,.6)}
+.mem b{display:block;font-size:15px;letter-spacing:.5px}
+.mem small{color:var(--muted);font-size:11.5px}
+.livecol{display:flex;flex-direction:column;gap:16px}
+.bigc{padding:20px 22px;position:relative;overflow:hidden}
+.bigc .lb{font-size:12px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;display:flex;align-items:center;gap:8px}
+.bigc .lb svg{width:17px;height:17px}
+.bigc .v{font:700 54px var(--mono);letter-spacing:-1.5px;margin-top:8px;line-height:1}
+.bigc .s{font-size:12.5px;color:var(--muted);margin-top:8px}
+.bigc.al .lb,.bigc.al .v{color:var(--allow)} .bigc.bl .lb,.bigc.bl .v{color:var(--block)}
+.bigc::after{content:"";position:absolute;right:-40px;bottom:-50px;width:150px;height:150px;border-radius:50%;filter:blur(22px);background:var(--glow)}
+.bigc.al{--glow:rgba(52,211,153,.18)} .bigc.bl{--glow:rgba(251,79,107,.2)}
+.bigc.bump .v{animation:bump .35s ease}
+@keyframes bump{50%{transform:scale(1.06)}}
+.split{display:flex;height:10px;border-radius:9px;overflow:hidden;background:rgba(148,163,184,.1);margin:12px 0 8px}
+.split b{display:block;height:100%;transition:width .5s}
+.ticker div{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(148,163,184,.06);font-size:12px;min-width:0}
+.ticker .path{flex:1;max-width:none}
+/* ---------- traffic lab (bulk) */
+.lab2{grid-template-columns:minmax(320px,.85fr) minmax(0,1.6fr);align-items:start}
+.slbox{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#0b1323;margin-bottom:12px}
+.sltop{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);font-weight:500}
+.sltop b{font:700 28px var(--mono);color:#fff}
+.sltop b small{font-size:13px;color:var(--muted);font-weight:500}
+input.range{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:9px;background:linear-gradient(90deg,var(--cyan) var(--p,10%),rgba(148,163,184,.16) var(--p,10%));outline:none;margin:14px 0 8px;cursor:pointer}
+input.range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:5px solid var(--cyan);box-shadow:0 0 0 5px rgba(34,211,238,.16)}
+input.range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:5px solid var(--cyan)}
+input.range:disabled{opacity:.5;cursor:not-allowed}
+.slscale{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--dim)}
+.btn.big{padding:12px 20px;font-size:14.5px;border-radius:12px}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chip{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:#0b1323;font-size:12.5px}
+.chip .ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--cyan-bg);color:var(--cyan);flex:none}
+.chip.att .ic{background:var(--block-bg);color:var(--block)}
+.chip .ic svg{width:13px;height:13px}
+.chip span{flex:1}
+.chip small{font:11px var(--mono);color:var(--dim)}
+.prog{height:12px;border-radius:9px;background:rgba(148,163,184,.1);overflow:hidden}
+.prog b{display:block;height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#6366f1);transition:width .4s}
+.prog.run b{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 10px,transparent 10px 20px),linear-gradient(90deg,#06b6d4,#6366f1);animation:stripes 1s linear infinite;background-size:28px 28px,100% 100%}
+@keyframes stripes{to{background-position:28px 0,0 0}}
+.progtxt{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted);margin:8px 0 16px}
+.otiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.ot{border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:#0b1323;border-top:3px solid var(--c)}
+.ot .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--c)}
+.ot .v{font:700 28px var(--mono);margin-top:5px}
+.ot .s{font-size:11.5px;color:var(--muted);line-height:1.35}
+.stack{display:flex;height:14px;border-radius:9px;overflow:hidden;background:rgba(148,163,184,.08);margin-top:14px}
+.stack b{display:block;height:100%;transition:width .4s}
+.console .ln.b{grid-template-columns:52px 64px 128px 70px minmax(0,1fr) 64px 92px 58px}
+/* ---------- rule-change notices */
+.chgwrap{margin-bottom:16px}
+.chg{border:1px solid rgba(251,191,36,.38);background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(15,23,41,.7));border-radius:13px;padding:13px 15px;margin-bottom:10px}
+.chg .h{display:flex;gap:10px;align-items:center;font-weight:600;font-size:13.5px;color:#fde68a}
+.chg .h .t{font:600 12px var(--mono);color:var(--warn);margin-left:auto}
+.chg ul{margin:8px 0 0;padding-left:18px;font:12px var(--mono);color:#e2e8f0}
+.chg .eff{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chg .ex{font:11.8px var(--mono);color:#c3cfe2;margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chg .ex .path{max-width:300px}
+.chg.empty-c{border-style:dashed;border-color:var(--line2);background:transparent;color:var(--muted);font-size:12.5px}
+.pill.chgd{background:var(--warn-bg);color:var(--warn)}
+tr.chgr td{background:rgba(251,191,36,.06)}
+tr.chgr .why{color:#fde68a}
+.alerts{position:fixed;right:20px;bottom:20px;z-index:55;display:flex;flex-direction:column-reverse;gap:10px;width:min(410px,calc(100vw - 40px));pointer-events:none}
+.alert{pointer-events:auto;border:1px solid rgba(251,191,36,.5);background:linear-gradient(135deg,#2a2412,#141c2f);border-radius:13px;padding:12px 14px;box-shadow:0 14px 40px rgba(0,0,0,.45);animation:slidein .3s ease;font-size:12.8px;position:relative}
+.alert.blk{border-color:rgba(251,79,107,.55);background:linear-gradient(135deg,#2c1219,#141c2f)}
+.alert.alw{border-color:rgba(52,211,153,.5);background:linear-gradient(135deg,#0f2a22,#141c2f)}
+.alert b{display:block;font-size:13px;margin-bottom:3px}
+.alert .m{color:#cbd5e1;font-family:var(--mono);font-size:11.8px;overflow-wrap:anywhere}
+.alert .x{position:absolute;top:8px;right:8px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:15px}
+.alert .n{font:700 11px var(--mono);padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.08);margin-left:6px}
+@keyframes slidein{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@media (max-width:1300px){.otiles{grid-template-columns:repeat(3,1fr)}.flow{grid-template-columns:repeat(3,1fr)}.step::after{display:none}}
+@media (max-width:1050px){.intro,.lab2{grid-template-columns:1fr}.team{grid-template-columns:1fr}}
+
+/* ---------- intro v3 (one box) */
+.hero2{position:relative;overflow:hidden;border:1px solid var(--line2);border-radius:20px;padding:40px 44px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:40px;align-items:center;
+  background-color:#05080f;background-image:linear-gradient(rgba(148,163,184,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.055) 1px,transparent 1px);background-size:100px 100px}
+.hero2 .glow{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(520px circle at var(--mx,50%) var(--my,50%),rgba(37,99,235,.30),rgba(37,99,235,.10) 35%,transparent 65%)}
+.hero2:hover .glow{opacity:1}
+.hero2 > *{position:relative}
+.hero2 .eyebrow{font:600 12px var(--mono);letter-spacing:1.6px;text-transform:uppercase;color:#60a5fa}
+.hero2 h2{font-size:56px;line-height:1.08;letter-spacing:-1.6px;font-weight:800;margin:14px 0 22px}
+.hero2 h2 .blue{color:#3b82f6}
+.hero2 .bul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.hero2 .bul li{font-size:16px;color:#e5edf8;line-height:1.5;padding-left:18px;position:relative}
+.hero2 .bul li::before{content:"•";position:absolute;left:2px;color:#fff}
+.hero2 .bul b{color:#93c5fd;font-weight:600}
+.flow3{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:26px}
+.flow3 .fs{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:11px;border:1px solid var(--line2);background:rgba(15,23,41,.7);font-size:13px;font-weight:500}
+.flow3 .fs i{font:700 11px var(--mono);font-style:normal;color:#60a5fa}
+.flow3 .fs.bad i{color:var(--block)} .flow3 .fs.sdn i{color:var(--violet)}
+.flow3 .ar{color:#3b82f6;font-weight:700}
+.teamrow{display:flex;align-items:center;gap:14px;margin-top:28px;flex-wrap:wrap}
+.avs{display:flex}
+.avs span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--mono);color:#fff;border:2px solid #05080f;margin-left:-10px;background:linear-gradient(135deg,#2563eb,#7c3aed)}
+.avs span:first-child{margin-left:0;background:linear-gradient(135deg,#0891b2,#2563eb)} .avs span:last-child{background:linear-gradient(135deg,#7c3aed,#db2777)}
+.teamrow .lbl{font-size:15px;font-weight:600}
+.names{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.names span{padding:9px 18px;border-radius:99px;border:1px solid rgba(226,232,240,.35);font-size:14px;font-weight:600;letter-spacing:.4px;background:rgba(5,8,15,.6)}
+.stat{border:1px solid var(--line2);border-radius:18px;background:rgba(7,10,18,.88);padding:20px 22px;backdrop-filter:blur(4px)}
+.stat .sh{display:flex;gap:12px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.stat .sh .ic2{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:rgba(37,99,235,.2);color:#60a5fa;flex:none}
+.stat .sh .ic2 svg{width:20px;height:20px}
+.stat .sh b{display:block;font-size:16px}
+.stat .sh small{color:var(--muted);font-size:12.5px}
+.bign{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.bign > div{border-radius:13px;padding:12px 14px;border:1px solid var(--line)}
+.bign .k{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase}
+.bign .v{font:700 38px var(--mono);letter-spacing:-1px;line-height:1.1;margin-top:4px}
+.bign .al{background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.25)} .bign .al .k,.bign .al .v{color:var(--allow)}
+.bign .bl{background:rgba(251,79,107,.07);border-color:rgba(251,79,107,.28)} .bign .bl .k,.bign .bl .v{color:var(--block)}
+.bign .bump .v{animation:bump .35s ease}
+.ringrow{display:flex;align-items:center;gap:20px;padding:6px 0 16px;border-bottom:1px solid var(--line)}
+.ring{position:relative;width:112px;height:112px;flex:none}
+.ring svg{width:112px;height:112px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:11}
+.ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .c b{font:700 22px var(--mono)} .ring .c small{font:12px var(--mono);color:var(--muted)}
+.ringrow h4{margin:0;font-size:17px} .ringrow p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.prow{margin-top:13px}
+.prow .t{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600}
+.prow .t span:last-child{font:12px var(--mono);color:var(--muted);font-weight:400}
+.prow .tr{height:7px;border-radius:9px;background:rgba(148,163,184,.12);overflow:hidden;margin-top:7px}
+.prow .tr b{display:block;height:100%;transition:width .5s}
+@media (max-width:1250px){.hero2{grid-template-columns:1fr}.hero2 h2{font-size:44px}}
+/* ---------- traffic lab rule toggles */
+.lrules{display:flex;flex-direction:column;gap:6px;max-height:560px;overflow:auto;padding-right:2px}
+.lr{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#0b1323;font-size:12.8px;transition:.15s}
+.lr.off{opacity:.5}
+.lr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lr.flash{border-color:var(--warn);box-shadow:0 0 0 3px rgba(251,191,36,.15)}
+
+.rule .hits{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.hl{display:inline-flex;align-items:center;gap:5px;font:500 11px var(--sans);color:var(--muted);white-space:nowrap}
+.hlin{width:44px;padding:3px 5px;border-radius:7px;border:1px solid var(--line2);background:#0a1222;color:var(--warn);font:700 12px var(--mono);text-align:center;outline:none}
+.hlin:focus{border-color:var(--warn);box-shadow:0 0 0 3px rgba(251,191,36,.15)}
+.ot.acc{background:linear-gradient(135deg,rgba(34,211,238,.12),#0b1323)}
+.ok{color:var(--allow);font-weight:700} .no{color:var(--block);font-weight:700}
+body:not(.onlab) .alerts{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg></div>
+      <div><b>Project 28</b><span>Proxy &amp; Content Filter</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-page="intro" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>Our Idea</button>
+      <button data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Overview</button>
+      <button data-page="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>Traffic Lab</button>
+      <button data-page="feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Live Feed<span class="count" id="navBlocked">0</span></button>
+      <button data-page="rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/></svg>Filter Rules</button>
+      <button data-page="sdn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 17.5h.01M10 17.5h.01M12 14V8M7 8h10M7 8V4M17 8V4"/></svg>SDN Switch</button>
+    </nav>
+    <div class="sidefoot">
+      <div><span>Mode</span><span class="mono" id="fMode">–</span></div>
+      <div><span>Proxy</span><span class="mono" id="fProxy">–</span></div>
+      <div><span><i class="dot" id="fCtlDot"></i>Controller</span><span class="mono" id="fCtl">–</span></div>
+      <div><span>Switches</span><span class="mono" id="fSw">–</span></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <div><h1 id="pTitle">Our Idea</h1><p id="pSub">Proxy &amp; content filtering system with SDN enforcement.</p></div>
+      <div class="sp"></div>
+      <div class="live"><i></i><span id="liveTxt">LIVE</span></div>
+      <button class="btn" id="btnReset" title="Clear events.jsonl and all counters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Reset analytics</button>
+    </div>
+
+    <!-- ======================= INTRO -->
+    <section class="page on" id="page-intro">
+      <div class="hero2" id="hero">
+        <div class="glow"></div>
+        <div>
+          <div class="eyebrow">Computer Networks · Project 28</div>
+          <h2><span class="blue">Proxy &amp; Content Filtering</span> System using TCP + SDN</h2>
+          <ul class="bul">
+            <li>Every client request passes through our <b>concurrent TCP proxy</b> and is checked against ordered filter rules: allowed requests reach the server, blocked ones get <b>403</b>.</li>
+            <li>Clients that keep breaking the rules are reported to the <b>SDN controller</b>, which drops them right at the switch. Rules can be changed live.</li>
+          </ul>
+          <div class="flow3">
+            <span class="fs"><i>01</i>Client</span><span class="ar">›</span>
+            <span class="fs"><i>02</i>TCP Proxy</span><span class="ar">›</span>
+            <span class="fs"><i>03</i>Rule Engine</span><span class="ar">›</span>
+            <span class="fs bad"><i>04</i>Strikes</span><span class="ar">›</span>
+            <span class="fs sdn"><i>05</i>SDN Switch DROP</span>
+          </div>
+          <div class="teamrow"><div class="avs"><span>NU</span><span>P</span><span>MA</span></div><span class="lbl">Our Team</span></div>
+          <div class="names"><span>NISHANTH U</span><span>PRAJWAL</span><span>MOOLA ADITHYA</span></div>
+        </div>
+        <div class="stat">
+          <div class="sh"><span class="ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><div><b>Live traffic</b><small>Messages handled by the proxy</small></div></div>
+          <div class="bign"><div class="al" id="iAlC"><div class="k">Allowed</div><div class="v" id="iAl">0</div></div><div class="bl" id="iBlC"><div class="k">Blocked</div><div class="v" id="iBl">0</div></div></div>
+          <div class="ringrow">
+            <div class="ring"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="48" stroke="rgba(148,163,184,.14)"/><circle id="rAl" cx="56" cy="56" r="48" stroke="#34d399" stroke-dasharray="0 302" stroke-linecap="round"/><circle id="rBl" cx="56" cy="56" r="48" stroke="#fb4f6b" stroke-dasharray="0 302" stroke-linecap="round"/></svg>
+              <div class="c"><b id="iPct">0%</b><small>blocked</small></div></div>
+            <div><h4 id="iTot">0 messages</h4><p id="iTotS">Send traffic from the Traffic Lab</p></div>
+          </div>
+          <div class="prow"><div class="t"><span style="color:var(--allow)">Allowed</span><span id="pAlT">0 · 0%</span></div><div class="tr"><b id="pAl" style="background:var(--allow);width:0"></b></div></div>
+          <div class="prow"><div class="t"><span style="color:var(--block)">Blocked</span><span id="pBlT">0 · 0%</span></div><div class="tr"><b id="pBl" style="background:var(--block);width:0"></b></div></div>
+          <div class="prow"><div class="t"><span style="color:var(--violet)">Hosts dropped at SDN switch</span><span id="iSdn">–</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= OVERVIEW -->
+    <section class="page" id="page-overview">
+      <div class="grid g6">
+        <div class="card kpi cy"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Requests</div><div class="v" id="kReq">0</div><div class="s" id="kRate">0 in the last minute</div></div>
+        <div class="card kpi al"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Allowed</div><div class="v" id="kAl">0</div><div class="s" id="kMon">0 flagged by monitor rules</div></div>
+        <div class="card kpi bl"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>Blocked</div><div class="v" id="kBl">0</div><div class="s" id="kBr">0% block rate</div></div>
+        <div class="card kpi vi"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M12 14V8"/></svg>Blocked at switch</div><div class="v" id="kSdn">0</div><div class="s" id="kSdnS">hosts dropped by SDN</div></div>
+        <div class="card kpi wa"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>Switch drops</div><div class="v" id="kDrop">0</div><div class="s" id="kDropS">packets dropped by flow rules</div></div>
+        <div class="card kpi"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Proxy overhead</div><div class="v" id="kLat">–</div><div class="s" id="kLatS">avg ms · p95 –</div></div>
+      </div>
+
+      <div class="grid g3 mt">
+        <div class="card">
+          <div class="hd"><div><h3>Traffic over time</h3><p class="sub">Requests per 5 seconds, last 5 minutes</p></div>
+            <div class="legend"><span><i style="background:var(--allow)"></i>Allowed</span><span><i style="background:var(--warn)"></i>Monitored</span><span><i style="background:var(--block)"></i>Blocked</span></div></div>
+          <canvas class="chart" id="cTime" height="220"></canvas>
+        </div>
+        <div class="card">
+          <h3>Why requests were blocked</h3><p class="sub">Blocked requests by rule category</p>
+          <div class="donut-wrap"><canvas id="cDonut" width="150" height="150"></canvas><div class="dlist" id="donutList"></div></div>
+        </div>
+      </div>
+
+      <div class="grid g3 mt">
+        <div class="card">
+          <div class="hd"><div><h3>Blocked by source IP</h3><p class="sub">Who sent blocked traffic, from which source ports, and which rules stopped it</p></div></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Source IP</th><th>Requests</th><th>Blocked</th><th>Rules hit</th><th>Recent src ports</th><th>Switch status</th><th></th></tr></thead><tbody id="ipBody"></tbody></table></div>
+        </div>
+        <div class="card"><h3>Top rules triggered</h3><p class="sub">Which exact rule made each decision</p><div class="bars" id="ruleBars"></div></div>
+      </div>
+
+      <div class="grid g3e mt">
+        <div class="card"><h3>Destination ports</h3><p class="sub">From the Host header / URL; red = blocked share</p><div class="bars" id="portBars"></div></div>
+        <div class="card"><h3>Destination hosts</h3><p class="sub">Which sites clients asked for</p><div class="bars" id="hostBars"></div></div>
+        <div class="card"><h3>Latest blocks</h3><p class="sub">Most recent denied requests</p><div id="recentBlocks"></div></div>
+      </div>
+    </section>
+
+    <!-- ======================= TRAFFIC LAB -->
+    <section class="page" id="page-lab">
+      <div class="grid lab2">
+        <div class="card">
+          <h3>Send traffic</h3><p class="sub" id="labModeTxt"></p>
+          <div class="slbox">
+            <div class="sltop"><span>Number of requests</span><b id="nReqTxt">100</b></div>
+            <input type="range" class="range" id="nReq" min="10" max="1000" step="10" value="100">
+            <div class="slscale"><span>10</span><span>250</span><span>500</span><span>750</span><span>1000</span></div>
+          </div>
+          <div class="slbox">
+            <div class="sltop"><span>Speed</span><b id="rateTxt">20 <small>req/s</small></b></div>
+            <input type="range" class="range" id="rate" min="5" max="100" step="5" value="20">
+            <div class="slscale"><span>5/s</span><span>slow · easy to follow</span><span>100/s</span></div>
+          </div>
+          <div class="row"><button class="btn pri big" id="btnBlast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>Send traffic</button><button class="btn danger big nofl" id="btnStop" disabled>Stop</button></div>
+          <div class="sect" style="margin-top:20px">Filter rules <span id="labRuleCount" style="color:var(--dim)"></span></div>
+          <p class="sub" style="margin-top:-4px">Turn any rule on or off, even while traffic is being sent: a pop-up shows what it changed. <b style="color:var(--warn)">after N</b> = the client is dropped at the SDN switch after N hits on that rule.</p>
+          <div class="lrules" id="labRules"><div class="empty">Loading rules…</div></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="hd"><div><h3>How the proxy is handling it</h3><p class="sub" id="blastSub">Set the number of requests and press Send traffic.</p></div><span class="pill error" id="blastState">IDLE</span></div>
+            <div class="prog" id="prog"><b id="progBar"></b></div>
+            <div class="progtxt"><span id="progTxt">0 / 0 sent</span><span id="progRate"></span></div>
+            <div class="otiles" id="oTiles"></div>
+            <div class="stack" id="oStack"></div>
+          </div>
+          <div class="card mt">
+            <h3>Per scenario</h3><p class="sub">What happened to the requests of each scenario</p>
+            <div class="tbl-wrap"><table><thead><tr><th>Scenario</th><th>From</th><th>Expected</th><th>Sent</th><th>Allowed</th><th>Blocked</th><th>Switch drop</th><th>Other</th><th>Acc.</th><th>Rules fired</th></tr></thead><tbody id="scBody"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt">
+        <div class="hd"><div><h3>Request log</h3><p class="sub">Latest requests of this run, newest first</p></div></div>
+        <div class="console" id="console"><div class="empty">No traffic sent yet.</div></div>
+      </div>
+    </section>
+
+    <!-- ======================= FEED -->
+    <section class="page" id="page-feed">
+      <div class="card">
+        <div class="row" style="align-items:center;margin-bottom:12px">
+          <div class="seg nofl" id="feedSeg"><button data-f="all" class="on">All</button><button data-f="allowed">Allowed</button><button data-f="blocked">Blocked</button><button data-f="monitored">Monitored</button><button data-f="changed">Rule changed</button></div>
+          <input class="i mono" id="feedQ" placeholder="Filter by IP, port, path, rule ID, category…">
+          <button class="btn nofl" id="btnPause">Pause</button>
+          <span class="nofl" style="color:var(--muted);font-size:12px" id="feedCount"></span>
+        </div>
+        <div class="tbl-wrap" style="max-height:calc(100vh - 210px)"><table><thead><tr><th>Time</th><th>Source IP : port</th><th>Method</th><th>Destination</th><th>Path</th><th>Decision</th><th>Rule</th><th>Why</th><th>ms</th></tr></thead><tbody id="feedBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ======================= RULES -->
+    <section class="page" id="page-rules">
+        <div class="card">
+          <h3>Escalation &amp; defaults</h3><p class="sub">How repeated violations turn into a block at the SDN switch</p>
+          <div class="row">
+            <label class="f">Default action (no rule matched)<select class="i" id="sDefault"><option value="allow">allow</option><option value="deny">deny</option></select></label>
+            <label class="f">Strike limit<input class="i mono" type="number" id="sLimit" min="1"></label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="f">Strike window (s)<input class="i mono" type="number" id="sWindow" min="1"></label>
+            <label class="f">SDN block duration (s)<input class="i mono" type="number" id="sDur" min="0"></label>
+          </div>
+          <div class="row" style="margin-top:14px;align-items:center">
+            <label class="switch nofl"><input type="checkbox" id="sEsc"><span></span></label>
+            <span style="font-size:13px">Ask the SDN controller to drop clients that reach the strike limit</span>
+          </div>
+          <p class="sub" style="margin:12px 0 0">Strike weight per block: <span class="sev low"></span>low 1 · <span class="sev medium"></span>medium 1 · <span class="sev high"></span>high 2 · <span class="sev critical"></span>critical 3. A single SQL-injection (critical) hit therefore blocks the client immediately.</p>
+          <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn pri nofl" id="btnSaveSettings">Save settings</button></div>
+        </div>
+      <div class="card mt">
+        <div class="hd"><div><h3>Filter rules <small id="ruleCount"></small></h3><p class="sub">Checked top to bottom; the first enabled rule whose conditions all match decides. Changes are written to policy.json and the proxy reloads them live.</p></div><button class="btn pri" id="btnAddRule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add rule</button></div>
+        <div id="policyErr"></div>
+        <div id="ruleList"></div>
+      </div>
+    </section>
+
+    <!-- ======================= SDN -->
+    <section class="page" id="page-sdn">
+      <div id="sdnBanner"></div>
+      <div class="grid g6">
+        <div class="card kpi cy"><div class="lb">Controller</div><div class="v" id="sCtl" style="font-size:20px">–</div><div class="s" id="sCtlS">OS-Ken REST API</div></div>
+        <div class="card kpi"><div class="lb">Switches</div><div class="v" id="sSw">–</div><div class="s">OpenFlow 1.3 datapaths</div></div>
+        <div class="card kpi vi"><div class="lb">Hosts blocked</div><div class="v" id="sHosts">0</div><div class="s">IP drop rules</div></div>
+        <div class="card kpi wa"><div class="lb">Port rules</div><div class="v" id="sPorts">0</div><div class="s">TCP port drop rules</div></div>
+        <div class="card kpi bl"><div class="lb">Packets dropped</div><div class="v" id="sDropP">0</div><div class="s" id="sDropB">0 B</div></div>
+        <div class="card kpi al"><div class="lb">Packets forwarded</div><div class="v" id="sFwdP">0</div><div class="s" id="sFwdB">0 B</div></div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card">
+          <h3>Block a host at the switch</h3><p class="sub">Installs <span class="mono">ipv4_src=IP → drop</span> (priority 200)</p>
+          <div class="row">
+            <label class="f">Source IP<input class="i mono" id="bIp" value="10.0.0.4"></label>
+            <label class="f nofl" style="width:150px">Duration<select class="i" id="bDur"><option value="60">1 minute</option><option value="300" selected>5 minutes</option><option value="1800">30 minutes</option><option value="0">Permanent</option></select></label>
+            <button class="btn danger nofl" id="btnBlockIp">Block host</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Block a TCP port</h3><p class="sub">All sources (priority 100) or only one source IP (priority 150) — e.g. block only h4 → port 80</p>
+          <div class="row">
+            <label class="f nofl" style="width:110px">TCP port<input class="i mono" id="bPort" value="80"></label>
+            <label class="f">Only from source IP (optional)<input class="i mono" id="bPortIp" placeholder="all sources"></label>
+            <button class="btn danger nofl" id="btnBlockPort">Block port</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card"><h3>Hosts blocked at the switch</h3><p class="sub">Dropped before they reach the proxy; expire automatically</p>
+          <div class="tbl-wrap"><table><thead><tr><th>Source IP</th><th>Reason</th><th>Time left</th><th></th></tr></thead><tbody id="sdnIps"></tbody></table></div></div>
+        <div class="card"><h3>Port drop rules</h3><p class="sub">Static rule TCP 9002 plus anything added here</p>
+          <div class="tbl-wrap"><table><thead><tr><th>TCP port</th><th>Applies to</th><th>Packets dropped</th><th></th></tr></thead><tbody id="sdnPorts"></tbody></table></div></div>
+      </div>
+      <div class="grid g2 mt">
+        <div class="card"><h3>Drop counters per flow rule</h3><p class="sub">Read from the switch with OpenFlow flow-stats every 2 s</p>
+          <div class="tbl-wrap"><table><thead><tr><th>Flow rule</th><th>Packets</th><th>Bytes</th><th>State</th></tr></thead><tbody id="sdnStats"></tbody></table></div></div>
+        <div class="card"><h3>Controller activity</h3><p class="sub">Blocks, unblocks and expiries</p><div class="hist" id="sdnHist"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast"></div>
+<div class="alerts" id="alerts"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n ?? 0).toLocaleString('en-IN');
+const tm = ts => { const d = new Date(ts * 1000); return d.toTimeString().slice(0, 8); };
+const bytes = b => { b = b || 0; const u = ['B','KB','MB','GB']; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return (i ? b.toFixed(1) : b) + ' ' + u[i]; };
+const CAT_COLORS = {attack:'#fb4f6b', malware:'#f97316', scanner:'#e879f9', 'blocked-site':'#60a5fa', keyword:'#22d3ee', method:'#a78bfa', port:'#fbbf24', 'access-control':'#34d399', 'data-leak':'#f472b6', flood:'#facc15', 'denied-client':'#94a3b8', malformed:'#64748b', default:'#64748b', other:'#64748b'};
+const catColor = c => CAT_COLORS[c] || ['#38bdf8','#c084fc','#fb7185','#4ade80','#fcd34d'][[...String(c)].reduce((a, x) => a + x.charCodeAt(0), 0) % 5];
+const ICONS = {
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  bug:'<rect x="8" y="6" width="8" height="14" rx="4"/><path d="M12 20v-9M4 13h4M16 13h4M5 7l3 2M19 7l-3 2M5 19l3-2M19 19l-3-2"/>',
+  database:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  radar:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 19 5"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  plug:'<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
+  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  wave:'<path d="M2 12c3-6 5-6 8 0s5 6 8 0 3-3 4-3"/>',
+  up:'<path d="m18 15-6-6-6 6"/>', down:'<path d="m6 9 6 6 6-6"/>', edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'
+};
+const ic = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ''}</svg>`;
+
+const S = {info:null, sum:null, events:[], lastId:0, page:'intro', seenChange:null, seenEv:null, feedF:'all', paused:false, src:'h1', policy:null, hostByIp:{}};
+
+/* ---------------------------------------------------------------- api */
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok && !j.errors) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg, err) {
+  const t = $('#toast'); t.innerHTML = msg; t.className = 'toast on' + (err ? ' err' : '');
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = 'toast', err ? 5000 : 2600);
+}
+
+/* --------------------------------------------------------------- nav */
+const PAGES = {
+  intro:['Our Idea','Proxy & content filtering system with SDN enforcement.'],
+  overview:['Overview','What the proxy allowed and blocked, who sent it and why.'],
+  lab:['Traffic Lab','Choose how many requests to send and watch how the proxy handles every scenario.'],
+  feed:['Live Feed','Every request the proxy handled, newest first. Click a row for details.'],
+  rules:['Filter Rules','Precise, ordered rules: IP / subnet, port, host, path, query, headers, body, rate.'],
+  sdn:['SDN Switch','Flow rules on the OpenFlow switch: who is dropped before reaching the proxy.']
+};
+function go(p) {
+  S.page = p;
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.page === p));
+  $$('.page').forEach(s => s.classList.toggle('on', s.id === 'page-' + p));
+  $('#pTitle').textContent = PAGES[p][0]; $('#pSub').textContent = PAGES[p][1];
+  if (p === 'rules') loadPolicy();
+  if (p === 'feed') renderFeed();
+  if (p === 'overview' && S.sum) renderOverview();
+  if (p === 'intro' && S.sum) renderIntro();
+  document.body.classList.toggle('onlab', p === 'lab');
+  if (S.sum) renderChanges();
+  try { localStorage.setItem('p28page2', p); } catch (e) {}
+}
+$$('#nav button').forEach(b => b.onclick = () => go(b.dataset.page));
+
+/* ------------------------------------------------------------ charts */
+function setupCanvas(c, h) {
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth;
+  if (c.width !== w * dpr || c.height !== h * dpr) { c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px'; }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); return [g, w, h];
+}
+function drawTimeline(buckets) {
+  const [g, W, H] = setupCanvas($('#cTime'), 220);
+  const L = 34, R = 6, T = 8, B = 22, cw = W - L - R, ch = H - T - B;
+  const max = Math.max(4, ...buckets.map(b => b.allowed + b.monitored + b.blocked + b.error));
+  const step = Math.ceil(max / 4);
+  const top = step * 4;
+  g.font = '11px JetBrains Mono, monospace'; g.textBaseline = 'middle';
+  for (let i = 0; i <= 4; i++) {
+    const y = T + ch - ch * i / 4;
+    g.strokeStyle = 'rgba(148,163,184,.09)'; g.beginPath(); g.moveTo(L, y + .5); g.lineTo(W - R, y + .5); g.stroke();
+    g.fillStyle = '#5b6b88'; g.textAlign = 'right'; g.fillText(step * i, L - 7, y);
+  }
+  const n = buckets.length, bw = cw / n, gap = Math.max(1, bw * .22);
+  buckets.forEach((b, i) => {
+    let y = T + ch;
+    const x = L + i * bw + gap / 2, w = bw - gap;
+    [['allowed', '#34d399'], ['monitored', '#fbbf24'], ['blocked', '#fb4f6b'], ['error', '#64748b']].forEach(([k, col]) => {
+      if (!b[k]) return;
+      const h = ch * b[k] / top;
+      const grd = g.createLinearGradient(0, y - h, 0, y); grd.addColorStop(0, col); grd.addColorStop(1, col + '99');
+      g.fillStyle = grd; g.beginPath(); g.roundRect ? g.roundRect(x, y - h, w, h, [2, 2, 0, 0]) : g.rect(x, y - h, w, h); g.fill();
+      y -= h;
+    });
+    if (i % 12 === 0 && x < W - 44) { g.fillStyle = '#5b6b88'; g.textAlign = 'left'; g.fillText(tm(b.t).slice(0, 5), x, H - 9); }
+  });
+}
+function drawDonut(items) {
+  const c = $('#cDonut'), dpr = window.devicePixelRatio || 1, s = 150;
+  c.width = s * dpr; c.height = s * dpr; c.style.width = s + 'px'; c.style.height = s + 'px';
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const total = items.reduce((a, x) => a + x[1], 0);
+  const cx = s / 2, cy = s / 2, r = 62, lw = 17;
+  g.lineWidth = lw; g.strokeStyle = 'rgba(148,163,184,.08)'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke();
+  let a = -Math.PI / 2;
+  items.forEach(([k, v]) => {
+    const da = Math.PI * 2 * v / total; g.strokeStyle = catColor(k);
+    g.beginPath(); g.arc(cx, cy, r, a + .03, a + da - .03); g.stroke(); a += da;
+  });
+  g.fillStyle = '#e6edf7'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '600 24px JetBrains Mono, monospace'; g.fillText(fmt(total), cx, cy - 6);
+  g.font = '11px Inter, sans-serif'; g.fillStyle = '#8a9bb8'; g.fillText('blocked', cx, cy + 15);
+  $('#donutList').innerHTML = items.length ? items.slice(0, 8).map(([k, v]) =>
+    `<div><i style="background:${catColor(k)}"></i><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('') : '<div class="empty">Nothing blocked yet</div>';
+}
+function bars(el, rows, label, opt = {}) {
+  if (!rows.length) { el.innerHTML = '<div class="empty">No data yet</div>'; return; }
+  const max = Math.max(...rows.map(r => r.total));
+  el.innerHTML = rows.slice(0, opt.n || 7).map(r => `<div class="bar"><div class="nm">${label(r)}</div><div class="num">${fmt(r.blocked)}<span style="color:var(--dim)"> / ${fmt(r.total)}</span></div>
+    <div class="track"><b style="width:${100 * r.blocked / max}%;background:linear-gradient(90deg,#f97316,#fb4f6b)"></b><b style="width:${100 * (r.total - r.blocked) / max}%;background:rgba(52,211,153,.55)"></b></div></div>`).join('');
+}
+
+/* ---------------------------------------------------------- overview */
+function hostTag(ip) { const h = S.hostByIp[ip]; return h ? ` <span class="tag ${h.role.includes('attack') ? 'h' : ''}">${h.name}</span>` : ''; }
+function sdnBlocked() { return (S.sum && S.sum.sdn && S.sum.sdn.blocked_ips) || {}; }
+
+function renderOverview() {
+  const s = S.sum, t = s.totals || {};
+  const req = t.requests || 0, bl = (t.blocked || 0) + (t.bad_request || 0), al = (t.allowed || 0) + (t.monitored || 0);
+  $('#kReq').textContent = fmt(req); $('#kRate').textContent = fmt(s.rate_per_min) + ' in the last minute';
+  $('#kAl').textContent = fmt(al); $('#kMon').textContent = fmt(t.monitored || 0) + ' flagged by monitor rules';
+  $('#kBl').textContent = fmt(bl); $('#kBr').textContent = (req ? (100 * bl / req).toFixed(1) : 0) + '% block rate';
+  $('#navBlocked').textContent = fmt(bl);
+  const sb = Object.keys(sdnBlocked()).length;
+  $('#kSdn').textContent = s.sdn ? sb : '–'; $('#kSdnS').textContent = s.sdn ? 'hosts dropped by SDN right now' : 'controller offline';
+  const st = s.sdn_stats;
+  $('#kDrop').textContent = st ? fmt(st.dropped_packets) : '–'; $('#kDropS').textContent = st ? bytes(st.dropped_bytes) + ' stopped at the switch' : 'controller offline';
+  $('#kLat').textContent = s.latency.avg == null ? '–' : s.latency.avg.toFixed(2);
+  $('#kLatS').textContent = 'avg ms · p95 ' + (s.latency.p95 == null ? '–' : s.latency.p95.toFixed(2) + ' ms');
+  if (S.page !== 'overview') return;
+  drawTimeline(s.timeline);
+  drawDonut(s.by_category);
+  const blk = sdnBlocked();
+  $('#ipBody').innerHTML = s.by_ip.length ? s.by_ip.slice(0, 10).map(r => {
+    const b = blk[r.ip];
+    const status = b ? `<span class="pill sdn">DROPPED · ${b.seconds_left == null ? 'permanent' : b.seconds_left + 's'}</span>` : (r.blocked ? `<span class="pill monitored">${r.strikes ? 'strikes ' + r.strikes : 'watching'}</span>` : '<span class="pill allowed">clean</span>');
+    const btn = b ? `<button class="btn sm ok" data-unblock="${esc(r.ip)}">Unblock</button>` : `<button class="btn sm danger" data-block="${esc(r.ip)}">Block</button>`;
+    return `<tr><td class="nw"><span class="ip">${esc(r.ip)}</span>${hostTag(r.ip)}</td><td class="mono">${fmt(r.total)}</td>
+      <td class="mono" style="white-space:nowrap">${fmt(r.blocked)}<span class="mini"><b style="width:${r.total ? 100 * r.blocked / r.total : 0}%"></b></span></td>
+      <td>${r.top_reasons.map(([k, v]) => `<span class="nw" style="white-space:nowrap"><span class="rid">${esc(k)}</span><span class="port">×${v}</span></span>`).join(' ') || '<span class="port">–</span>'}</td>
+      <td class="port nw">${r.recent_ports.slice(-2).join(', ') || '–'}</td><td>${status}</td><td>${btn}</td></tr>`;
+  }).join('') : '<tr><td colspan="7"><div class="empty">No traffic yet — open the Traffic Lab and run a scenario.</div></td></tr>';
+  const rr = s.by_rule, mx = Math.max(1, ...rr.map(r => r.hits));
+  $('#ruleBars').innerHTML = rr.length ? rr.slice(0, 8).map(r => `<div class="bar"><div class="nm"><span class="rid">${esc(r.id)}</span> ${esc(r.name)}</div><div class="num">${fmt(r.hits)}</div>
+    <div class="track"><b style="width:${100 * r.hits / mx}%;background:${r.decision === 'allowed' ? 'var(--allow)' : r.decision === 'monitored' ? 'var(--warn)' : catColor(r.category)}"></b></div></div>`).join('') : '<div class="empty">No rule has fired yet</div>';
+  bars($('#portBars'), s.by_port, r => `<span class="mono">:${r.port}</span>`);
+  bars($('#hostBars'), s.by_host, r => `<span class="mono">${esc(r.host)}</span>`);
+  const recent = S.events.filter(e => e.decision === 'blocked').slice(-6).reverse();
+  $('#recentBlocks').innerHTML = recent.length ? recent.map(e => `<div class="click" data-ev="${e.id}" style="padding:8px 0;border-bottom:1px solid rgba(148,163,184,.06);cursor:pointer">
+    <div style="display:flex;gap:8px;align-items:center"><span class="ip">${esc(e.client_ip)}</span><span class="port">:${e.client_port}</span><span style="flex:1"></span><span class="rid">${esc(e.rule_id || '-')}</span></div>
+    <div class="path" style="color:var(--muted);margin-top:3px;max-width:100%">${esc(e.method)} ${esc(e.host)}:${e.dst_port}${esc(e.path)}</div></div>`).join('') : '<div class="empty">No blocks yet</div>';
+}
+
+/* -------------------------------------------------------------- feed */
+function evMatch(e) {
+  if (e.type !== 'request') return S.feedF === 'all' && e.type === 'sdn';
+  if (S.feedF === 'changed' && !e.rule_change) return false;
+  if (S.feedF === 'blocked' && !['blocked', 'bad_request'].includes(e.decision)) return false;
+  if (!['all', 'blocked', 'changed'].includes(S.feedF) && e.decision !== S.feedF) return false;
+  const q = $('#feedQ').value.trim().toLowerCase();
+  if (!q) return true;
+  return [e.client_ip, e.client_port, e.dst_port, e.path, e.rule_id, e.category, e.host, e.method].join(' ').toLowerCase().includes(q);
+}
+let feedSeen = 0;
+function renderFeed() {
+  if (S.page !== 'feed' || S.paused) return;
+  const rows = S.events.filter(evMatch).slice(-400).reverse();
+  $('#feedCount').textContent = rows.length + ' shown';
+  $('#feedBody').innerHTML = rows.length ? rows.map(e => {
+    const isNew = e.id > feedSeen ? ' new' : '';
+    if (e.type === 'sdn') return `<tr class="${isNew}"><td class="port">${tm(e.ts)}</td><td><span class="ip">${esc(e.ip)}</span></td><td colspan="3" style="color:var(--violet)">SDN ${esc(e.action)} requested · ${esc(e.reason || '')}</td><td><span class="pill sdn">SDN</span></td><td></td><td class="why">${e.ok ? 'installed via controller REST' : esc(e.error || 'failed')}</td><td></td></tr>`;
+    const rc = e.rule_change;
+    return `<tr class="click${isNew}${rc ? ' chgr' : ''}" data-ev="${e.id}"><td class="port">${tm(e.ts)}</td><td class="nw"><span class="ip">${esc(e.client_ip)}</span><span class="port">:${e.client_port}</span>${hostTag(e.client_ip)}</td>
+      <td class="mono" style="font-size:12px">${esc(e.method)}</td><td class="mono" style="font-size:12px;white-space:nowrap">${esc(e.host || '–')}<span class="port">:${e.dst_port}</span></td>
+      <td><span class="path">${esc(e.path)}</span></td><td class="nw"><span class="pill ${e.decision}">${e.decision.replace('_', ' ').toUpperCase()}</span>${e.escalated ? ' <span class="pill sdn">→SDN</span>' : ''}${rc ? ' <span class="pill chgd" title="Decision changed by a rule edit">RULE CHANGED</span>' : ''}</td>
+      <td>${e.rule_id ? `<span class="rid">${esc(e.rule_id)}</span>` : '<span class="port">–</span>'}</td><td>${rc ? `<span class="why" title="${esc(rc.text)}">⚡ ${esc(rcSummary(e))}</span>` : `<span class="why" title="${esc((e.why || []).join('; '))}">${esc((e.why || []).join('; '))}</span>`}</td>
+      <td class="port">${e.proxy_ms != null ? e.proxy_ms.toFixed(1) : ''}</td></tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="empty">No matching events</div></td></tr>';
+  feedSeen = S.lastId;
+}
+$$('#feedSeg button').forEach(b => b.onclick = () => { $$('#feedSeg button').forEach(x => x.classList.remove('on')); b.classList.add('on'); S.feedF = b.dataset.f; renderFeed(); });
+$('#feedQ').oninput = renderFeed;
+$('#btnPause').onclick = () => { S.paused = !S.paused; $('#btnPause').textContent = S.paused ? 'Resume' : 'Pause'; $('#liveTxt').textContent = S.paused ? 'PAUSED' : 'LIVE'; if (!S.paused) renderFeed(); };
+
+document.addEventListener('click', e => {
+  const ev = e.target.closest('[data-ev]'); if (ev) return openEvent(+ev.dataset.ev);
+  const b = e.target.closest('[data-block]'); if (b) return sdn('block', {ip: b.dataset.block, duration: 300, reason: 'manual block from dashboard'});
+  const u = e.target.closest('[data-unblock]'); if (u) return sdn('unblock', {ip: u.dataset.unblock});
+  const pu = e.target.closest('[data-portunblock]'); if (pu) { const d = {port: +pu.dataset.portunblock}; if (pu.dataset.ip) d.ip = pu.dataset.ip; return sdn('port_unblock', d); }
+});
+function openEvent(id) {
+  const e = S.events.find(x => x.id === id); if (!e) return;
+  const row = (k, v) => v === undefined || v === null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`;
+  $('#drawer').innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span class="pill ${e.decision}" style="font-size:12px;padding:4px 11px">${e.decision.toUpperCase()}</span><b style="font-size:16px">${e.status || ''}</b><span style="flex:1"></span><button class="icon-btn" onclick="closeAll()">${ic('x')}</button></div>
+    <h2 style="font:600 15px var(--mono);margin:16px 0 0;word-break:break-all">${esc(e.method)} ${esc(e.path)}</h2>
+    ${e.rule_change ? `<div class="chg" style="margin-top:14px"><div class="h">⚡ Decision changed by a rule edit</div><div style="font-size:12.8px;margin-top:6px;color:#e2e8f0">${esc(e.rule_change.text)}</div><ul>${e.rule_change.change.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${e.rule_id ? `<div class="verdict ${e.decision === 'blocked' ? 'deny' : e.decision === 'monitored' ? 'monitor' : 'allow'}"><div class="big"><span class="rid" style="font-size:13px">${esc(e.rule_id)}</span>${esc(e.rule_name)}</div><ul>${(e.why || []).map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : `<div class="verdict allow"><div class="big">No rule matched</div><ul><li>default policy: allow</li></ul></div>`}
+    <dl class="kv">${row('Time', new Date(e.ts * 1000).toLocaleString())}${row('Source', esc(e.client_ip) + ':' + e.client_port + hostTag(e.client_ip))}${row('Destination', esc(e.host) + ':' + e.dst_port)}
+    ${row('Category', esc(e.category))}${row('Severity', e.severity ? `<span class="sev ${e.severity}"></span>${esc(e.severity)}` : '')}${row('Strikes', e.strikes != null ? e.strikes + ' / ' + e.strike_limit : '')}
+    ${row('Escalated to SDN', e.escalated ? '<span style="color:var(--violet)">yes — controller asked to drop this IP</span>' : '')}${row('User-Agent', esc(e.ua))}
+    ${row('Proxy time', e.proxy_ms != null ? e.proxy_ms + ' ms' : '')}${row('Backend time', e.backend_ms != null ? e.backend_ms + ' ms' : '')}${row('Overhead', e.overhead_ms != null ? e.overhead_ms + ' ms' : '')}
+    ${row('Request bytes', e.req_bytes)}${row('Response bytes', e.resp_bytes)}${row('Error', esc(e.error))}</dl>
+    <div class="row" style="margin-top:20px">${sdnBlocked()[e.client_ip] ? `<button class="btn ok" data-unblock="${esc(e.client_ip)}">Unblock ${esc(e.client_ip)} at switch</button>` : `<button class="btn danger" data-block="${esc(e.client_ip)}">Block ${esc(e.client_ip)} at switch</button>`}</div>`;
+  $('#drawer').classList.add('on'); $('#scrim').classList.add('on');
+}
+function closeAll() { $('#drawer').classList.remove('on'); $('#modal').classList.remove('on'); $('#scrim').classList.remove('on'); }
+$('#scrim').onclick = closeAll;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+/* --------------------------------------------------------------- lab */
+const OUT = {
+  allowed:['Allowed', 'var(--allow)', 'forwarded to the backend'],
+  blocked:['Blocked', 'var(--block)', 'by a proxy rule (403)'],
+  ratelimited:['Rate-limited', 'var(--warn)', 'too many requests (429)'],
+  dropped:['Dropped at switch', 'var(--violet)', 'no reply · SDN DROP rule'],
+  error:['Other', '#94a3b8', '400 malformed / 502 backend down']
+};
+const B = {running:false, stop:false, total:0, sent:0, t0:0, t1:0, counts:{}, per:{}, log:[], ok:0, judged:0};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function rangeFill(el) { el.style.setProperty('--p', (100 * (el.value - el.min) / (el.max - el.min)) + '%'); }
+function renderLab() {
+  const info = S.info;
+  $('#labModeTxt').textContent = info.mode === 'lab' ? 'Every scenario is sent from its own Mininet host (h1 = normal user, h4 = attacker), so the proxy and the switch see the real IPs.'
+    : info.mode === 'standalone' ? 'Standalone mode: requests are labelled as h1 (10.0.0.1) or h4 (10.0.0.4). Run lab.py for real Mininet hosts and SDN drops.'
+    : 'Root mode: traffic is sent from this PC (10.0.0.254). Run lab.py to send from h1 / h4.';
+  const hostOf = sc => info.hosts.some(h => h.name === sc.from) ? sc.from : (info.hosts[0] || {}).name;
+  renderLabRules();
+  renderBlast();
+}
+function renderLabRules() {
+  const el = $('#labRules'); if (!el) return;
+  if (!S.policy) { el.innerHTML = '<div class="empty">Loading rules…</div>'; return; }
+  const rules = S.policy.rules || [];
+  $('#labRuleCount').textContent = `(${rules.filter(r => r.enabled !== false).length} on / ${rules.length})`;
+  el.innerHTML = rules.map((r, i) => `<div class="lr ${r.enabled === false ? 'off' : ''}" id="lr-${esc(r.id)}"><label class="switch"><input type="checkbox" ${r.enabled !== false ? 'checked' : ''} data-ltog="${i}"><span></span></label>
+    <span class="rid">${esc(r.id)}</span><span class="nm" title="${esc(r.name)}">${esc(r.name || '(unnamed)')}</span>${(r.action || 'deny') === 'deny' ? `<label class="hl" title="Block the client at the switch after this many hits">after<input class="hlin" type="number" min="0" max="99" data-lhl="${i}" value="${r.hit_limit || ''}" placeholder="–"></label>` : ''}<span class="pill ${r.action || 'deny'}">${(r.action || 'deny').toUpperCase()}</span></div>`).join('');
+  $$('[data-lhl]').forEach(x => x.onchange = () => setHitLimit(rules[+x.dataset.lhl], x.value));
+  $$('[data-ltog]').forEach(x => x.onchange = () => {
+    const r = rules[+x.dataset.ltog]; r.enabled = x.checked;
+    pushAlert('t' + r.id + Date.now(), '', `⚡ Rule ${r.id} ${x.checked ? 'ENABLED' : 'DISABLED'}`, `"${r.name}" was ${x.checked ? 'turned on' : 'turned off'}${B.running ? ' while traffic is running' : ''}. Requests it affects will pop up here.`);
+    savePolicy(`${r.id} ${x.checked ? 'enabled' : 'disabled'}`);
+  });
+}
+['nReq', 'rate'].forEach(id => { const el = $('#' + id); rangeFill(el); el.oninput = () => { rangeFill(el); $('#nReqTxt').textContent = fmt(+$('#nReq').value); $('#rateTxt').innerHTML = $('#rate').value + ' <small>req/s</small>'; if (!B.running) renderBlast(); }; });
+
+function addResult(r) {
+  const o = r.outcome === 'bad' ? 'error' : (OUT[r.outcome] ? r.outcome : 'error');
+  B.counts[o] = (B.counts[o] || 0) + 1;
+  const p = B.per[r.scenario] || (B.per[r.scenario] = {name:r.scenario_name, icon:r.icon, src:r.src, ip:r.src_ip, sent:0, allowed:0, blocked:0, dropped:0, other:0, rules:{}, ok:0, judged:0, exp:{}});
+  p.sent++;
+  if (r.correct === true || r.correct === false) { B.judged++; p.judged++; if (r.correct) { B.ok++; p.ok++; } }
+  if (r.expected) p.exp[r.expected] = (p.exp[r.expected] || 0) + 1;
+  if (o === 'allowed') p.allowed++; else if (o === 'blocked' || o === 'ratelimited') p.blocked++; else if (o === 'dropped') p.dropped++; else p.other++;
+  if (r.rule) p.rules[r.rule] = (p.rules[r.rule] || 0) + 1;
+  B.log.unshift(Object.assign(r, {o, at: Date.now() / 1000}));
+  if (B.log.length > 120) B.log.length = 120;
+}
+async function startBlast() {
+  if (B.running) return;
+  const total = +$('#nReq').value;
+  Object.assign(B, {running:true, stop:false, total, sent:0, t0:Date.now(), t1:0, counts:{}, per:{}, log:[], ok:0, judged:0});
+  $('#btnBlast').disabled = true; $('#btnStop').disabled = false; $('#nReq').disabled = true;
+  renderBlast();
+  while (B.sent < total && !B.stop) {
+    const t = Date.now(), n = Math.min(+$('#rate').value, total - B.sent);
+    let r;
+    try { r = await api('/api/blast', {offset: B.sent, count: n}); }
+    catch (e) { toast('Send failed: ' + esc(e.message), true); break; }
+    (r.results || []).forEach(addResult);
+    B.sent += n; renderBlast(); poll();
+    const wait = 1000 - (Date.now() - t);
+    if (wait > 0 && B.sent < total && !B.stop) await sleep(wait);
+  }
+  B.running = false; B.t1 = Date.now();
+  $('#btnBlast').disabled = false; $('#btnStop').disabled = true; $('#nReq').disabled = false;
+  renderBlast(); poll();
+  const c = B.counts;
+  toast(`${B.stop ? 'Stopped' : 'Done'}: ${fmt(B.sent)} sent · accuracy ${B.judged ? (100 * B.ok / B.judged).toFixed(1) : 0}% · ${fmt(c.allowed || 0)} allowed · ${fmt((c.blocked || 0) + (c.ratelimited || 0))} blocked${c.dropped ? ' · ' + fmt(c.dropped) + ' dropped at switch' : ''}`);
+}
+$('#btnBlast').onclick = startBlast;
+$('#btnStop').onclick = () => { B.stop = true; $('#btnStop').disabled = true; };
+
+function renderBlast() {
+  const total = B.total || +$('#nReq').value, sent = B.sent;
+  const secs = ((B.running ? Date.now() : (B.t1 || Date.now())) - B.t0) / 1000;
+  $('#prog').classList.toggle('run', B.running);
+  $('#progBar').style.width = (total ? 100 * sent / total : 0) + '%';
+  $('#progTxt').textContent = `${fmt(sent)} / ${fmt(total)} sent`;
+  $('#progRate').textContent = B.t0 ? `${secs.toFixed(1)} s · ${secs > 0 ? (sent / secs).toFixed(1) : 0} req/s` : '';
+  const st = $('#blastState');
+  st.className = 'pill ' + (B.running ? 'allowed' : B.t0 ? 'sdn' : 'error');
+  st.textContent = B.running ? 'RUNNING' : B.t0 ? (B.stop ? 'STOPPED' : 'DONE') : 'IDLE';
+  $('#blastSub').textContent = B.t0 ? `${fmt(sent)} requests from ${Object.keys(B.per).length} scenarios went through the proxy.` : 'Set the number of requests and press Send traffic.';
+  const acc = B.judged ? 100 * B.ok / B.judged : null;
+  $('#oTiles').innerHTML = `<div class="ot acc" style="--c:var(--cyan)"><div class="k">Accuracy</div><div class="v">${acc == null ? '–' : acc.toFixed(acc === 100 ? 0 : 1) + '%'}</div><div class="s">${B.judged ? fmt(B.ok) + ' / ' + fmt(B.judged) + ' handled as expected' : 'expected vs actual result'}</div></div>` + Object.entries(OUT).map(([k, [lb, col, sub]]) => {
+    const v = B.counts[k] || 0;
+    return `<div class="ot" style="--c:${col}"><div class="k">${lb}</div><div class="v">${fmt(v)}</div><div class="s">${sent ? (100 * v / sent).toFixed(1) + '% · ' : ''}${sub}</div></div>`;
+  }).join('');
+  $('#oStack').innerHTML = Object.entries(OUT).map(([k, [lb, col]]) => `<b title="${lb}: ${B.counts[k] || 0}" style="width:${sent ? 100 * (B.counts[k] || 0) / sent : 0}%;background:${col}"></b>`).join('');
+  const per = Object.values(B.per);
+  const cell = (v, col) => `<td class="mono" style="color:${v ? col : 'var(--dim)'}">${fmt(v)}</td>`;
+  $('#scBody').innerHTML = per.length ? per.map(p => `<tr><td class="nw"><span style="display:inline-flex;gap:8px;align-items:center"><span style="width:16px;height:16px;display:inline-grid;color:${p.src === 'h4' ? 'var(--block)' : 'var(--cyan)'}">${ic(p.icon)}</span>${esc(p.name)}</span></td>
+    <td class="nw"><span class="ip">${esc(p.ip)}</span> <span class="tag ${p.src === 'h4' ? 'h' : ''}">${esc(p.src)}</span></td>
+    <td>${(() => { const e = Object.entries(p.exp).sort((a, b) => b[1] - a[1])[0]; return e ? `<span class="pill ${e[0] === 'block' ? 'blocked' : 'allowed'}">${e[0].toUpperCase()}</span>` : '–'; })()}</td><td class="mono">${fmt(p.sent)}</td>
+    ${cell(p.allowed, 'var(--allow)')}${cell(p.blocked, 'var(--block)')}${cell(p.dropped, 'var(--violet)')}${cell(p.other, '#b6c2d8')}
+    <td class="mono ${p.judged && p.ok === p.judged ? 'ok' : 'no'}">${p.judged ? (100 * p.ok / p.judged).toFixed(0) + '%' : '–'}</td>
+    <td>${Object.entries(p.rules).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `<span class="rid">${esc(k)}</span><span class="port"> ×${v}</span>`).join(' ') || '<span class="port">–</span>'}</td></tr>`).join('')
+    : '<tr><td colspan="10"><div class="empty">No traffic sent yet</div></td></tr>';
+  const lbl = {allowed: r => r.code, blocked: r => r.code, ratelimited: r => r.code, dropped: () => 'DROPPED', error: r => r.code || 'ERROR'};
+  const cls = {allowed:'allowed', blocked:'blocked', ratelimited:'monitored', dropped:'timeout', error:'error'};
+  $('#console').innerHTML = B.log.length ? B.log.slice(0, 80).map(r => `<div class="ln b"><span class="t">#${r.n}</span><span class="pill ${cls[r.o]}">${lbl[r.o](r)}</span><span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.scenario_name)}</span>
+    <span class="ip" style="font-size:11.5px">${esc(r.src_ip)}</span><span class="p">${esc(r.method)} ${r.host ? `<span style="color:#93c5fd">${esc(r.host)}</span>` : ''}${esc(r.path)}</span><span>${r.rule ? `<span class="rid">${esc(r.rule)}</span>` : ''}</span><span>${r.correct === true ? '<span class="ok">✓ expected</span>' : r.correct === false ? `<span class="no" title="expected ${esc(r.expected)}">✗ exp. ${esc(r.expected)}</span>` : ''}</span><span class="t">${r.ms} ms</span></div>`).join('')
+    : '<div class="empty">No traffic sent yet.</div>';
+}
+
+/* ------------------------------------------------------------- intro */
+let introLast = {al: -1, bl: -1};
+function renderIntro() {
+  const t = S.sum.totals || {};
+  const al = (t.allowed || 0) + (t.monitored || 0), bl = (t.blocked || 0) + (t.bad_request || 0), tot = al + bl;
+  if (al !== introLast.al) { $('#iAl').textContent = fmt(al); if (introLast.al >= 0) bumpEl('#iAlC'); }
+  if (bl !== introLast.bl) { $('#iBl').textContent = fmt(bl); if (introLast.bl >= 0) bumpEl('#iBlC'); }
+  introLast = {al, bl};
+  const C = 2 * Math.PI * 48, pa = tot ? al / tot : 0, pb = tot ? bl / tot : 0;
+  $('#rAl').setAttribute('stroke-dasharray', `${C * pa} ${C}`);
+  $('#rBl').setAttribute('stroke-dasharray', `${C * pb} ${C}`);
+  $('#rBl').setAttribute('stroke-dashoffset', -C * pa);
+  $('#iPct').textContent = Math.round(100 * pb) + '%';
+  $('#iTot').textContent = fmt(tot) + ' messages';
+  $('#iTotS').textContent = tot ? `${fmt(al)} allowed · ${fmt(bl)} blocked` : 'Send traffic from the Traffic Lab';
+  $('#pAl').style.width = 100 * pa + '%'; $('#pBl').style.width = 100 * pb + '%';
+  $('#pAlT').textContent = `${fmt(al)} · ${(100 * pa).toFixed(0)}%`; $('#pBlT').textContent = `${fmt(bl)} · ${(100 * pb).toFixed(0)}%`;
+  $('#iSdn').textContent = S.sum.sdn ? Object.keys(sdnBlocked()).length : 'controller offline';
+}
+function bumpEl(sel) { const el = $(sel); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+(function () {
+  const h = $('#hero');
+  h.addEventListener('mousemove', e => { const r = h.getBoundingClientRect(); h.style.setProperty('--mx', (e.clientX - r.left) + 'px'); h.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+})();
+
+/* ------------------------------------------------- rule-change notices */
+function changeCard(c) {
+  const exs = c.examples.slice(0, 3).map(x => `<div class="ex"><span class="pill ${x.before}">${x.before.toUpperCase()}</span>→<span class="pill ${x.after}">${x.after.toUpperCase()}</span><span class="ip" style="font-size:11.5px">${esc(x.ip)}</span><span class="path">${esc(x.method)} ${x.host && x.host !== 'site.local' ? esc(x.host) : ''}${esc(x.path)}</span>${x.rule ? `<span class="rid">${esc(x.rule)}</span>` : ''}</div>`).join('');
+  return `<div class="chg"><div class="h">⚡ Rule changed while traffic was running<span class="t">${tm(c.ts)}</span></div>
+    <ul>${c.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <div class="eff"><span class="pill blocked">${fmt(c.newly_blocked)} now BLOCKED because of this change</span><span class="pill allowed">${fmt(c.newly_allowed)} now ALLOWED because of this change</span></div>
+    ${exs || '<div class="ex" style="color:var(--muted)">Waiting for traffic that this change affects…</div>'}</div>`;
+}
+function rcInfo(e) {
+  const rc = e.rule_change, blk = rc.after === 'blocked';
+  const rule = blk ? (e.rule_id || 'default') : (rc.old_rule || 'default');
+  const item = (rc.change || []).find(x => x.startsWith(rule + ' ')) || '';
+  const verb = /DISABLED/.test(item) ? 'disabled' : /deleted/.test(item) ? 'deleted' : /ENABLED/.test(item) ? 'enabled' : /added/.test(item) ? 'added' : 'changed';
+  return {rule, verb, blk};
+}
+function rcSummary(e) { const i = rcInfo(e); return `${i.rule} was ${i.verb} → now ${i.blk ? 'BLOCKED' : 'ALLOWED'} (before: ${e.rule_change.before.toUpperCase()})`; }
+function renderChanges() {}   /* rule changes: pop-ups in the Traffic Lab + "Rule changed" filter in the Live Feed */
+const ALERTS = {};
+function pushAlert(key, cls, title, msg) {
+  if (S.page !== 'lab') return;                       // pop-ups only on the Traffic Lab page
+  const box = $('#alerts');
+  let a = ALERTS[key];
+  if (a && a.el.isConnected) { a.n++; a.el.querySelector('.n').textContent = '×' + a.n; a.el.querySelector('.m').textContent = msg; clearTimeout(a.h); }
+  else {
+    const el = document.createElement('div'); el.className = 'alert ' + cls;
+    el.innerHTML = `<button class="x" title="Dismiss">×</button><b>${title}<span class="n">×1</span></b><div class="m"></div>`;
+    el.querySelector('.m').textContent = msg; el.querySelector('.x').onclick = () => el.remove();
+    box.appendChild(el); a = ALERTS[key] = {el, n: 1};
+    while (box.children.length > 4) box.firstElementChild.remove();
+  }
+  a.h = setTimeout(() => a.el.remove(), 9000);
+}
+function checkAlerts(evs) {
+  const ch = S.sum.policy_changes || [];
+  const top = ch.length ? ch[0].id : 0;
+  if (S.seenChange === null) S.seenChange = top;                     // do not replay old changes on page load
+  ch.filter(c => c.id > S.seenChange).reverse().forEach(c => pushAlert('c' + c.id, '', '⚡ Rule changed at ' + tm(c.ts), c.items.join(' · ')));
+  S.seenChange = Math.max(S.seenChange, top);
+  if (S.seenEv === null) { S.seenEv = S.lastId; return; }
+  evs.filter(e => e.rule_change && e.id > S.seenEv).forEach(e => {
+    const rc = e.rule_change, blk = rc.after === 'blocked';
+    const {rule, verb} = rcInfo(e);
+    pushAlert('e' + rc.change_id + rc.after + rule, blk ? 'blk' : 'alw',
+      blk ? `🚫 Now BLOCKED — rule ${rule} was ${verb}` : `✅ Now PASSED — rule ${rule} was ${verb}`,
+      `${e.method} ${e.path} from ${e.client_ip}: ${rc.text}`);
+    const row = document.getElementById('lr-' + rule); if (row) { row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1500); }
+  });
+  S.seenEv = S.lastId;
+}
+
+/* ------------------------------------------------------------- rules */
+const COND = {
+  src_ip:['list', 'Source IPs or subnets', '10.0.0.4, 10.0.0.0/24'], src_ip_not:['list', 'Everyone EXCEPT these IPs/subnets', '10.0.0.1'],
+  dst_port:['list', 'Destination ports or ranges', '22, 3306, 8000-8999'], method:['list', 'HTTP methods', 'PUT, DELETE'], method_not:['list', 'Allowed methods (others match)', 'GET, HEAD, POST'],
+  host:['list', 'Hosts: exact, *.sub only, .domain + subs', '.facebook.com, exact.example'], path_exact:['list', 'Exact paths (decoded, ../ resolved)', '/admin'], path_prefix:['list', 'Path starts with', '/admin, /internal/'],
+  path_regex:['str', 'Regex on the decoded path', '\\.(exe|msi)$'], query_regex:['str', 'Regex on the decoded query', 'union\\s+select'], url_regex:['str', 'Regex on path + query', '<script'],
+  keywords:['list', 'Whole words in host/path/query', 'casino, gambling'], user_agent_regex:['str', 'Regex on User-Agent', 'sqlmap|nikto'], header_regex:['hdr', 'Header: regex (one per line)', 'Referer: evil\\.com'],
+  body_regex:['str', 'Regex on the request body', 'password='], body_larger_than:['int', 'Body bigger than N bytes', '1048576'], content_type:['list', 'Request Content-Type starts with', 'application/zip'],
+  hours:['list', 'Only during HH:MM-HH:MM', '09:00-18:00'], rate_limit:['rate', 'Max requests / seconds per IP', '25/5']
+};
+function condToText(k, v) {
+  const t = COND[k] ? COND[k][0] : 'str';
+  if (t === 'list') return (Array.isArray(v) ? v : [v]).join(', ');
+  if (t === 'hdr') return Object.entries(v).map(([a, b]) => a + ': ' + b).join('\n');
+  if (t === 'rate') return v.requests + '/' + v.seconds;
+  return String(v);
+}
+function textToCond(k, s) {
+  const t = COND[k][0]; s = s.trim();
+  if (t === 'list') return s.split(',').map(x => x.trim()).filter(Boolean).map(x => k === 'dst_port' && /^\d+$/.test(x) ? +x : x);
+  if (t === 'int') return parseInt(s, 10);
+  if (t === 'hdr') return Object.fromEntries(s.split('\n').filter(l => l.includes(':')).map(l => [l.slice(0, l.indexOf(':')).trim(), l.slice(l.indexOf(':') + 1).trim()]));
+  if (t === 'rate') { const [a, b] = s.split('/'); return {requests: +a, seconds: +b}; }
+  return s;
+}
+async function loadPolicy() {
+  try { const r = await api('/api/policy'); S.policy = r.policy; S.legacy = r.legacy; renderRules(r.errors); renderLabRules(); } catch (e) { toast('Could not load policy: ' + esc(e.message), true); }
+}
+function renderRules(errors) {
+  const p = S.policy, hits = Object.fromEntries((S.sum ? S.sum.by_rule : []).map(r => [r.id, r.hits]));
+  $('#sDefault').value = p.default_action || 'allow'; $('#sLimit').value = p.strike_limit; $('#sWindow').value = p.strike_window; $('#sDur').value = p.block_duration; $('#sEsc').checked = !!p.block_client_on_violation;
+  $('#policyErr').innerHTML = errors && errors.length ? `<div class="banner">⚠ ${errors.map(esc).join('<br>')}</div>` : '';
+  const rules = p.rules || [];
+  $('#ruleCount').textContent = `${rules.filter(r => r.enabled !== false).length} enabled / ${rules.length}`;
+  const card = (r, i, legacy) => `<div class="rule ${r.enabled === false ? 'off' : ''} ${legacy ? 'legacy' : ''}">
+    ${legacy ? '<span class="tag">list</span>' : `<label class="switch"><input type="checkbox" ${r.enabled !== false ? 'checked' : ''} data-toggle="${i}"><span></span></label>`}
+    <span class="rid" style="text-align:center">${esc(r.id)}</span>
+    <div class="nm"><b>${esc(r.name || '(unnamed)')}</b><small><span class="sev ${r.severity || 'medium'}"></span>${esc(r.severity || 'medium')} · ${esc(r.category || 'other')}</small></div>
+    <span class="pill ${r.action || 'deny'}">${(r.action || 'deny').toUpperCase()}</span>
+    <div class="conds">${Object.entries(r.match || {}).map(([k, v]) => `<span class="tag" title="${esc(condToText(k, v))}"><b style="color:var(--cyan);font-weight:500">${k}</b> ${esc(condToText(k, v).slice(0, 38))}</span>`).join('')}</div>
+    <div class="hits"><span>${fmt(hits[r.id] || 0)} hits</span>${!legacy && (r.action || 'deny') === 'deny' ? `<label class="hl" title="After this many hits from the same client (within the strike window) the client is dropped at the SDN switch">block after<input class="hlin" type="number" min="0" max="99" data-hl="${i}" value="${r.hit_limit || ''}" placeholder="–">hits</label>` : ''}</div>
+    <div class="acts">${legacy ? '' : `<button class="icon-btn" title="Move up" data-mv="${i},-1">${ic('up')}</button><button class="icon-btn" title="Move down" data-mv="${i},1">${ic('down')}</button><button class="icon-btn" title="Edit" data-edit="${i}">${ic('edit')}</button><button class="icon-btn" title="Delete" data-del="${i}">${ic('trash')}</button>`}</div></div>`;
+  $('#ruleList').innerHTML = (S.legacy || []).map(r => card(r, -1, true)).join('') + rules.map((r, i) => card(r, i, false)).join('');
+  $$('[data-toggle]').forEach(x => x.onchange = () => { rules[+x.dataset.toggle].enabled = x.checked; savePolicy(`${rules[+x.dataset.toggle].id} ${x.checked ? 'enabled' : 'disabled'}`); });
+  $$('[data-mv]').forEach(x => x.onclick = () => { const [i, d] = x.dataset.mv.split(',').map(Number); const j = i + d; if (j < 0 || j >= rules.length) return; [rules[i], rules[j]] = [rules[j], rules[i]]; savePolicy('Order saved'); });
+  $$('[data-edit]').forEach(x => x.onclick = () => editRule(+x.dataset.edit));
+  $$('[data-hl]').forEach(x => x.onchange = () => setHitLimit(rules[+x.dataset.hl], x.value));
+  $$('[data-del]').forEach(x => x.onclick = () => { const r = rules[+x.dataset.del]; if (!confirmInline(x)) return; rules.splice(+x.dataset.del, 1); savePolicy(`${esc(r.id)} deleted`); });
+}
+function setHitLimit(r, v) {
+  const n = parseInt(v, 10);
+  if (n > 0) r.hit_limit = Math.min(n, 99); else delete r.hit_limit;
+  savePolicy(n > 0 ? `${esc(r.id)}: client is dropped at the switch after ${r.hit_limit} hit${r.hit_limit > 1 ? 's' : ''}` : `${esc(r.id)}: hit limit removed`);
+}
+function confirmInline(btn) { if (btn.dataset.armed) return true; btn.dataset.armed = 1; btn.style.color = 'var(--block)'; btn.style.borderColor = 'var(--block)'; btn.title = 'Click again to delete'; toast('Click the delete button again to confirm'); setTimeout(() => { delete btn.dataset.armed; btn.style.color = ''; btn.style.borderColor = ''; }, 3000); return false; }
+async function savePolicy(msg) {
+  try {
+    const r = await api('/api/policy', S.policy);
+    if (!r.ok) { toast('Not saved: ' + r.errors.map(esc).join('; '), true); return loadPolicy(); }
+    toast((msg || 'Policy saved') + ' — proxy reloads it on the next request');
+    loadPolicy(); setTimeout(poll, 300);
+  } catch (e) { toast('Save failed: ' + esc(e.message), true); }
+}
+$('#btnSaveSettings').onclick = () => {
+  Object.assign(S.policy, {default_action: $('#sDefault').value, strike_limit: +$('#sLimit').value, strike_window: +$('#sWindow').value, block_duration: +$('#sDur').value, block_client_on_violation: $('#sEsc').checked});
+  savePolicy('Settings saved');
+};
+function editRule(i) {
+  const isNew = i < 0, rules = S.policy.rules;
+  const next = 'R' + String(rules.reduce((m, r) => Math.max(m, parseInt((r.id || '').replace(/\D/g, '')) || 0), 0) + 1).padStart(2, '0');
+  const r = isNew ? {id: next, name: '', enabled: true, action: 'deny', category: 'custom', severity: 'medium', match: {path_prefix: ['/example']}} : JSON.parse(JSON.stringify(rules[i]));
+  const opts = sel => Object.keys(COND).map(k => `<option ${k === sel ? 'selected' : ''}>${k}</option>`).join('');
+  const condRow = (k, v) => `<div class="cond"><select class="i mono ck">${opts(k)}</select><textarea class="i cv" rows="1">${esc(v)}</textarea><button class="icon-btn" data-rm>${ic('x')}</button><div class="help">${esc(COND[k][1])} — e.g. <span class="mono">${esc(COND[k][2])}</span></div></div>`;
+  $('#modal').innerHTML = `<div style="display:flex;align-items:center"><div style="flex:1"><h2>${isNew ? 'New rule' : 'Edit rule ' + esc(r.id)}</h2><p class="sub" style="margin:0">All conditions must match. Commas inside one condition mean "any of".</p></div><button class="icon-btn" onclick="closeAll()">${ic('x')}</button></div>
+    <div class="row" style="margin-top:16px"><label class="f nofl" style="width:90px">ID<input class="i mono" id="eId" value="${esc(r.id)}"></label><label class="f">Name<input class="i" id="eName" value="${esc(r.name)}" placeholder="e.g. Block torrent sites"></label></div>
+    <div class="row" style="margin-top:10px"><label class="f">Action<select class="i" id="eAct">${['deny', 'allow', 'monitor'].map(a => `<option ${a === r.action ? 'selected' : ''}>${a}</option>`).join('')}</select></label>
+      <label class="f">Severity<select class="i" id="eSev">${['low', 'medium', 'high', 'critical'].map(a => `<option ${a === r.severity ? 'selected' : ''}>${a}</option>`).join('')}</select></label>
+      <label class="f">Category<input class="i" id="eCat" value="${esc(r.category || '')}" list="cats"></label>
+      <label class="f nofl" style="width:150px">Block after N hits<input class="i mono" type="number" min="0" max="99" id="eHl" value="${r.hit_limit || ''}" placeholder="off"></label></div>
+    <datalist id="cats">${Object.keys(CAT_COLORS).map(c => `<option>${c}</option>`).join('')}</datalist>
+    <h3 style="margin:18px 0 10px;font-size:13px">Conditions</h3><div id="conds">${Object.entries(r.match || {}).map(([k, v]) => condRow(k, condToText(k, v))).join('')}</div>
+    <button class="btn sm" id="eAdd">+ Add condition</button>
+    <div class="row" style="margin-top:20px;justify-content:flex-end"><button class="btn nofl" onclick="closeAll()">Cancel</button><button class="btn pri nofl" id="eSave">${isNew ? 'Add rule' : 'Save rule'}</button></div>`;
+  const wire = () => {
+    $$('#conds [data-rm]').forEach(b => b.onclick = () => b.parentElement.remove());
+    $$('#conds .ck').forEach(s => s.onchange = () => { const k = s.value; s.parentElement.querySelector('.help').innerHTML = `${esc(COND[k][1])} — e.g. <span class="mono">${esc(COND[k][2])}</span>`; s.parentElement.querySelector('.cv').placeholder = COND[k][2]; });
+  };
+  wire();
+  $('#eAdd').onclick = () => { $('#conds').insertAdjacentHTML('beforeend', condRow('path_prefix', '')); wire(); };
+  $('#eSave').onclick = () => {
+    const match = {};
+    $$('#conds .cond').forEach(c => { const k = c.querySelector('.ck').value, v = c.querySelector('.cv').value; if (v.trim()) match[k] = textToCond(k, v); });
+    if (!Object.keys(match).length) return toast('Add at least one condition', true);
+    const nr = Object.assign({}, isNew ? {} : r, {id: $('#eId').value.trim(), name: $('#eName').value.trim(), enabled: r.enabled !== false, action: $('#eAct').value, category: $('#eCat').value.trim() || 'custom', severity: $('#eSev').value, match});
+    const hl = parseInt($('#eHl').value, 10); if (hl > 0) nr.hit_limit = Math.min(hl, 99); else delete nr.hit_limit;
+    if (isNew) rules.push(nr); else rules[i] = nr;
+    closeAll(); savePolicy(`${esc(nr.id)} saved`);
+  };
+  $('#modal').classList.add('on'); $('#scrim').classList.add('on');
+}
+$('#btnAddRule').onclick = () => editRule(-1);
+/* --------------------------------------------------------------- sdn */
+async function sdn(action, data) {
+  try {
+    const r = await api('/api/sdn/' + action, data);
+    if (r.ok) toast('✓ ' + esc(r.message)); else toast('Controller: ' + esc(r.message || r.error || 'failed'), true);
+  } catch (e) { toast(esc(e.message), true); }
+  poll();
+}
+$('#btnBlockIp').onclick = () => sdn('block', {ip: $('#bIp').value.trim(), duration: +$('#bDur').value, reason: 'manual block from dashboard'});
+$('#btnBlockPort').onclick = () => { const d = {port: +$('#bPort').value}; const ip = $('#bPortIp').value.trim(); if (ip) d.ip = ip; sdn('port_block', d); };
+function renderSdn() {
+  const st = S.sum.sdn, stats = S.sum.sdn_stats;
+  $('#fCtlDot').className = 'dot ' + (st ? 'ok' : 'bad'); $('#fCtl').textContent = st ? 'online' : 'offline'; $('#fSw').textContent = st ? st.switches.length : '–';
+  if (S.page !== 'sdn') return;
+  $('#sdnBanner').innerHTML = st ? (st.switches.length ? '' : '<div class="banner">Controller is running but no switch is connected. Start the network with <code>sudo python3 lab.py</code>.</div>')
+    : `<div class="banner">⚠ SDN controller not reachable at <code>${esc(S.info.controller)}</code>. Start it in another terminal: <code>osken-manager controller.py</code></div>`;
+  $('#sCtl').textContent = st ? 'Online' : 'Offline'; $('#sCtl').style.color = st ? 'var(--allow)' : 'var(--block)';
+  $('#sSw').textContent = st ? st.switches.length : '–';
+  const ips = st ? Object.entries(st.blocked_ips) : [];
+  const ports = st ? st.blocked_tcp_ports.map(p => ({port: p})).concat(st.scoped_port_blocks || []) : [];
+  $('#sHosts').textContent = ips.length; $('#sPorts').textContent = ports.length;
+  $('#sDropP').textContent = stats ? fmt(stats.dropped_packets) : '–'; $('#sDropB').textContent = stats ? bytes(stats.dropped_bytes) : '';
+  $('#sFwdP').textContent = stats ? fmt(stats.forwarded_packets) : '–'; $('#sFwdB').textContent = stats ? bytes(stats.forwarded_bytes) : '';
+  const dur = +((S.policy && S.policy.block_duration) || 300);
+  $('#sdnIps').innerHTML = ips.length ? ips.map(([ip, b]) => `<tr><td class="nw"><span class="ip">${esc(ip)}</span>${hostTag(ip)}</td><td><span class="why" style="max-width:210px" title="${esc(b.reason)}">${esc(b.reason)}</span></td>
+    <td>${b.seconds_left == null ? '<span class="cd">permanent</span>' : `<span class="cd">${Math.floor(b.seconds_left / 60)}:${String(b.seconds_left % 60).padStart(2, '0')}</span><div class="cdbar"><b style="width:${Math.min(100, 100 * b.seconds_left / Math.max(dur, b.seconds_left))}%"></b></div>`}</td>
+    <td><button class="btn sm ok" data-unblock="${esc(ip)}">Unblock</button></td></tr>`).join('') : '<tr><td colspan="4"><div class="empty">No host is blocked at the switch</div></td></tr>';
+  const drops = (stats && stats.drops) || [];
+  const dropOf = (port, ip) => { const d = drops.find(x => x.port === port && (ip ? x.kind === 'ip_port' && x.ip === ip : x.kind === 'port')); return d ? fmt(d.packets) : '0'; };
+  $('#sdnPorts').innerHTML = ports.length ? ports.map(p => `<tr><td class="mono">tcp/${p.port}${p.port === 9002 && !p.ip ? ' <span class="tag">static</span>' : ''}</td><td>${p.ip ? `<span class="ip">${esc(p.ip)}</span> only` : '<span style="color:var(--muted)">all sources</span>'}</td>
+    <td class="mono">${dropOf(p.port, p.ip)}</td><td><button class="btn sm ok" data-portunblock="${p.port}" ${p.ip ? `data-ip="${esc(p.ip)}"` : ''}>Remove</button></td></tr>`).join('') : '<tr><td colspan="4"><div class="empty">No port rules</div></td></tr>';
+  $('#sdnStats').innerHTML = drops.length ? drops.map(d => `<tr><td class="mono" style="font-size:12px">${d.kind === 'ip' ? `ipv4_src=${esc(d.ip)}` : d.kind === 'port' ? `tcp_dst=${d.port}` : `ipv4_src=${esc(d.ip)}, tcp_dst=${d.port}`} → drop</td>
+    <td class="mono">${fmt(d.packets)}</td><td class="mono">${bytes(d.bytes)}</td><td>${d.active ? '<span class="pill blocked">ACTIVE</span>' : '<span class="pill error">EXPIRED</span>'}</td></tr>`).join('') : '<tr><td colspan="4"><div class="empty">No drop counters yet</div></td></tr>';
+  const hist = st ? st.history : [];
+  const lbl = {block_ip: ['BLOCK HOST', 'blocked'], unblock_ip: ['UNBLOCK', 'allowed'], expired: ['EXPIRED', 'error'], block_port: ['BLOCK PORT', 'monitored'], unblock_port: ['OPEN PORT', 'allowed']};
+  $('#sdnHist').innerHTML = hist.length ? hist.map(h => `<div><span class="t">${tm(h.ts)}</span><span><span class="pill ${(lbl[h.action] || ['', 'error'])[1]}">${(lbl[h.action] || [h.action])[0]}</span></span>
+    <span>${h.ip ? `<span class="ip">${esc(h.ip)}</span> ` : ''}${h.port ? `<span class="mono">tcp/${h.port}</span> ` : ''}<span style="color:var(--muted)">${esc(h.reason || '')}${h.duration ? ' · ' + h.duration + 's' : ''}</span></span></div>`).join('') : '<div class="empty">No controller activity yet</div>';
+}
+
+/* -------------------------------------------------------------- poll */
+let polling = false;
+async function poll() {
+  if (polling) return; polling = true;
+  try {
+    const [sum, evs] = await Promise.all([api('/api/summary'), api('/api/events?after=' + S.lastId)]);
+    if (sum.last_id < S.lastId) { S.events = []; S.lastId = 0; }
+    S.sum = sum;
+    if (evs.length) { S.events.push(...evs); S.lastId = evs[evs.length - 1].id; if (S.events.length > 2500) S.events = S.events.slice(-2000); }
+    renderOverview(); renderSdn(); renderIntro(); renderChanges();
+    if (evs.length) renderFeed();
+    checkAlerts(evs);
+    $('.live').style.opacity = 1;
+  } catch (e) { $('#liveTxt').textContent = 'OFFLINE'; $('.live').style.opacity = .5; }
+  polling = false;
+}
+$('#btnReset').onclick = async () => { if (!confirmInline($('#btnReset'))) return; await api('/api/reset', {}); S.events = []; S.lastId = 0; feedSeen = 0; toast('Analytics cleared'); poll(); };
+window.addEventListener('resize', () => S.sum && S.page === 'overview' && renderOverview());
+
+(async function init() {
+  S.info = await api('/api/info');
+  S.info.hosts.forEach(h => S.hostByIp[h.ip] = h);
+  S.src = S.info.hosts[0] ? S.info.hosts[0].name : 'h1';
+  $('#fMode').textContent = S.info.mode; $('#fProxy').textContent = S.info.proxy;
+  renderLab();
+  try { const p = localStorage.getItem('p28page2'); if (p && PAGES[p]) go(p); } catch (e) {}
+  api('/api/policy').then(r => { S.policy = r.policy; S.legacy = r.legacy; renderLabRules(); }).catch(() => {});
+  poll(); setInterval(() => { if (!document.hidden) poll(); }, 1500);
+})();
+</script>
+</body>
+</html>
